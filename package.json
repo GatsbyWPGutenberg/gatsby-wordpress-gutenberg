@@ -6,7 +6,21 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "contributors": [
+    {
+      "name": "Peter Pristas",
+      "email": "pristas.peter@gmail.com",
+      "url": "https://github.com/pristas-peter"
+    },
+    {
+      "name": "Henrik Wirth",
+      "url": "https://github.com/henrikwirth"
+    }
+  ],
   "license": "MIT",
   "devDependencies": {
     "lerna": "^3.20.2"

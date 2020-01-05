@@ -11,7 +11,17 @@
     "url": "https://github.com/pristas-peter/gatsby-wordpress-gutenberg.git",
     "directory": "packages/gatsby-source-wordpress-gutenberg"
   },
-  "author": "",
+  "contributors": [
+    {
+      "name": "Peter Pristas",
+      "email": "pristas.peter@gmail.com",
+      "url": "https://github.com/pristas-peter"
+    },
+    {
+      "name": "Henrik Wirth",
+      "url": "https://github.com/henrikwirth"
+    }
+  ],
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/pristas-peter/gatsby-wordpress-gutenberg/issues"
