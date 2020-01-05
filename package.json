@@ -1,11 +1,14 @@
 {
-  "name": "gatsby-theme-wp-graphql-gutenberg",
+  "name": "gatsby-wordpress-gutenberg",
   "version": "0.0.1",
-  "description": "",
-  "main": "index.js",
+  "description": "Gatsby WordPress Gutenberg Framework",
+  "main": "packages/gatsby-source-wordpress-gutenberg/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "lerna": "^3.20.2"
+  }
 }
