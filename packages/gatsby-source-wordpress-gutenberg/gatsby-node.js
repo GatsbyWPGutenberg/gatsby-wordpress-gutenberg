@@ -401,10 +401,10 @@ exports.createPages = async ({ graphql, createNodeId, createContentDigest, actio
   await createPages({ graphql, actions })
 }
 
-exports.onCreateWebpackConfig = ({ actions, getConfig }) => {
-  actions.setWebpackConfig({
-    resolve: {
-      modules: [path.resolve(path.join(process.cwd(), ".cache"))],
-    },
-  })
-}
+// exports.onCreateWebpackConfig = ({ actions, getConfig }) => {
+//   actions.setWebpackConfig({
+//     resolve: {
+//       modules: [path.resolve(path.join(process.cwd(), ".cache"))],
+//     },
+//   })
+// }

@@ -31,3 +31,4 @@ services:
       MYSQL_RANDOM_ROOT_PASSWORD: "1"
     volumes:
       - ./db:/var/lib/mysql
+      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d

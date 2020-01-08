@@ -2,3 +2,5 @@
 package.json
 package-lock.json
 public
+wordpress
+db
