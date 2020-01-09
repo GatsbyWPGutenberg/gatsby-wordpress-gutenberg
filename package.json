@@ -25,6 +25,8 @@
   ],
   "license": "MIT",
   "devDependencies": {
-    "lerna": "^3.20.2"
+    "@prettier/plugin-php": "^0.12.0",
+    "lerna": "^3.20.2",
+    "prettier": "^1.19.1"
   }
 }
