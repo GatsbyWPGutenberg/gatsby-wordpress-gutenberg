@@ -1,12 +1,12 @@
-const { default: ApolloClient, gql } = require('apollo-boost');
-const fetch = require('node-fetch');
-const { default: pluck } = require('graphql-tag-pluck');
-const { print, parse, Kind } = require('graphql');
-const path = require('path');
-const fs = require('fs-extra');
+const { default: ApolloClient, gql } = require("apollo-boost")
+const fetch = require("node-fetch")
+const { default: pluck } = require("graphql-tag-pluck")
+const { print, parse, Kind } = require("graphql")
+const path = require("path")
+const fs = require("fs-extra")
 
 const fetchAllGutenbergPosts = async ({ client, first, after }) => {
-  const posts = [];
+  const posts = []
 
   const {
     data: { postsWithBlocks },
@@ -33,100 +33,100 @@ const fetchAllGutenbergPosts = async ({ client, first, after }) => {
       first,
       after,
     },
-  });
+  })
 
   postsWithBlocks.edges.forEach(({ node }) => {
-    posts.push(node);
-  });
+    posts.push(node)
+  })
 
   if (postsWithBlocks.pageInfo.hasNextPage) {
-    const nextPosts = await fetchAllGutenbergPosts({ client, first, after: postsWithBlocks.pageInfo.endCursor });
+    const nextPosts = await fetchAllGutenbergPosts({ client, first, after: postsWithBlocks.pageInfo.endCursor })
 
-    return [...posts, ...nextPosts];
+    return [...posts, ...nextPosts]
   }
 
-  return posts;
-};
+  return posts
+}
 
 const getBlocksMetadata = ({ blocks, currentInnerBlocksLevel = 1 }) => {
-  const blockTypenames = new Set();
-  let innerBlocksLevel = currentInnerBlocksLevel;
+  const blockTypenames = new Set()
+  let innerBlocksLevel = currentInnerBlocksLevel
 
   blocks.forEach(block => {
-    blockTypenames.add(`WP_${block.__typename}`);
+    blockTypenames.add(`WP_${block.__typename}`)
 
     if (block.innerBlocks.length) {
       const result = getBlocksMetadata({
         blocks: block.innerBlocks,
         currentInnerBlocksLevel: currentInnerBlocksLevel + 1,
-      });
+      })
 
       result.blockTypenames.forEach(blockTypename => {
-        blockTypenames.add(blockTypename);
-      });
+        blockTypenames.add(blockTypename)
+      })
 
-      innerBlocksLevel = result.innerBlocksLevel;
+      innerBlocksLevel = result.innerBlocksLevel
     }
-  });
+  })
 
   return {
     blockTypenames,
     innerBlocksLevel,
-  };
-};
+  }
+}
 
 const getSourceComponentFiles = ({ sourceComponentFileByBlockTypename, blockTypenames }) => {
-  let hasUnknownBlock = false;
-  const sourceComponentFiles = [];
-  const processedBlockTypenames = new Set();
+  let hasUnknownBlock = false
+  const sourceComponentFiles = []
+  const processedBlockTypenames = new Set()
 
   blockTypenames.forEach(blockTypename => {
     if (processedBlockTypenames.has(blockTypename)) {
-      return;
+      return
     }
 
-    const sourceComponentFile = sourceComponentFileByBlockTypename[blockTypename];
+    const sourceComponentFile = sourceComponentFileByBlockTypename[blockTypename]
 
     if (sourceComponentFile) {
-      sourceComponentFiles.push(sourceComponentFile);
+      sourceComponentFiles.push(sourceComponentFile)
     } else {
-      hasUnknownBlock = true;
+      hasUnknownBlock = true
     }
 
-    processedBlockTypenames.add(blockTypename);
-  });
+    processedBlockTypenames.add(blockTypename)
+  })
 
   if (hasUnknownBlock) {
-    sourceComponentFiles.push(sourceComponentFileByBlockTypename['WP_Block']);
+    sourceComponentFiles.push(sourceComponentFileByBlockTypename["WP_Block"])
   }
 
-  return sourceComponentFiles;
-};
+  return sourceComponentFiles
+}
 
 const generateBlocks = ({ sourceComponentFiles, id, postTypename, nodeId, innerBlocksLevel }) => {
   const banner = `/* eslint-disable */
 /* Warning: this file is autogerated, any changes would be lost */
-`;
+`
 
   if (!sourceComponentFiles.length) {
     return `${banner}
 export default () => null;
-`;
+`
   }
 
-  const fragmentName = `GutenbergBlocks${id}`;
+  const fragmentName = `GutenbergBlocks${id}`
 
   const getFragment = (level = 1) => {
-    let fragment = level === 1 ? `{ ...${fragmentName}` : ` innerBlocks { ...${fragmentName}`;
+    let fragment = level === 1 ? `{ ...${fragmentName}` : ` innerBlocks { ...${fragmentName}`
 
     if (level < innerBlocksLevel) {
-      fragment += getFragment(level + 1);
+      fragment += getFragment(level + 1)
     }
 
-    fragment += ` }`;
+    fragment += ` }`
 
-    return fragment;
-  };
+    return fragment
+  }
 
   return `
 ${banner}
@@ -134,7 +134,7 @@ import React from 'react';
 import { graphql } from 'gatsby';
 ${sourceComponentFiles
   .map(({ absolutePath, fragmentName }) => `import ${fragmentName} from '${absolutePath}';`)
-  .join('\n')}
+  .join("\n")}
 
 const Blocks = ({blocks}) => {
   return (
@@ -147,15 +147,15 @@ const Blocks = ({blocks}) => {
         const children = block.innerBlocks ? <Blocks blocks={block.innerBlocks} /> : null;
         ${sourceComponentFiles
           .map(({ fragmentName, blockTypename }) => {
-            return blockTypename === 'WP_Block'
+            return blockTypename === "WP_Block"
               ? `
         return <${fragmentName} {...block} children={children} key={i} />;`
               : `
         if (block.__typename === '${blockTypename}') {
           return <${fragmentName} {...block} children={children} key={i} />;
-        }`;
+        }`
           })
-          .join('\n')}
+          .join("\n")}
       })}
     </>
   );
@@ -164,7 +164,7 @@ const Blocks = ({blocks}) => {
 export const pageQuery = graphql\`
   fragment ${fragmentName} on WP_Block {
     __typename
-    ${sourceComponentFiles.map(({ fragmentName }) => `...${fragmentName}`).join('\n    ')}
+    ${sourceComponentFiles.map(({ fragmentName }) => `...${fragmentName}`).join("\n    ")}
   }
   query GetGutenbergBlocks${id} {
     wp {
@@ -178,8 +178,8 @@ export const pageQuery = graphql\`
 
 export default ({data}) => 
   <Blocks blocks={data.wp.node.blocks} />;
-`;
-};
+`
+}
 
 const createPages = async ({ graphql, actions: { createPage } }) => {
   const { data, errors } = await graphql(`
@@ -193,10 +193,10 @@ const createPages = async ({ graphql, actions: { createPage } }) => {
         }
       }
     }
-  `);
+  `)
 
   if (errors) {
-    throw errors;
+    throw errors
   }
 
   if (data) {
@@ -204,10 +204,10 @@ const createPages = async ({ graphql, actions: { createPage } }) => {
       createPage({
         path,
         component,
-      });
-    });
+      })
+    })
   }
-};
+}
 
 exports.sourceNodes = async ({ actions, createContentDigest, createNodeId }, { linkOptions }) => {
   const client = new ApolloClient({
@@ -216,18 +216,18 @@ exports.sourceNodes = async ({ actions, createContentDigest, createNodeId }, { l
     // onError: async ({ operation, networkError: { response } }) => {
     //   console.error(print(operation.query), response);
     // },
-  });
+  })
 
-  const posts = await fetchAllGutenbergPosts({ client, first: 100 });
+  const posts = await fetchAllGutenbergPosts({ client, first: 100 })
 
   await Promise.all(
     posts.map(async blocksPost => {
-      const { createNode } = actions;
+      const { createNode } = actions
 
-      const { id, __typename, blocksJSON, ...rest } = blocksPost;
-      const [postType, postId] = Buffer.from(id, 'base64')
+      const { id, __typename, blocksJSON, ...rest } = blocksPost
+      const [postType, postId] = Buffer.from(id, "base64")
         .toString()
-        .split(':');
+        .split(":")
       const node = {
         ...rest,
         id: createNodeId(`gutenberg-post-${id}`),
@@ -239,52 +239,52 @@ exports.sourceNodes = async ({ actions, createContentDigest, createNodeId }, { l
         internal: {
           type: `GutenbergPost`,
         },
-      };
+      }
 
-      node.internal.contentDigest = createContentDigest(JSON.stringify(node));
-      await createNode(node);
-    }),
-  );
-};
+      node.internal.contentDigest = createContentDigest(JSON.stringify(node))
+      await createNode(node)
+    })
+  )
+}
 
 exports.createSchemaCustomization = ({ actions }) => {
-  const { createTypes } = actions;
+  const { createTypes } = actions
   const typeDefs = `
     type GutenbergPage implements Node {
       id: ID!
       component: String!
       path: String!
     }
-  `;
-  createTypes(typeDefs);
-};
+  `
+  createTypes(typeDefs)
+}
 
 exports.onCreateNode = async ({ node, createNodeId, createContentDigest, actions }) => {
-  const { createNode, createParentChildLink } = actions;
+  const { createNode, createParentChildLink } = actions
 
-  if (node.internal.type === 'File' && node.sourceInstanceName === 'gutenberg-source-components') {
+  if (node.internal.type === "File" && node.sourceInstanceName === "gutenberg-source-components") {
     const document = parse(
       await pluck.fromFile(node.absolutePath, {
         modules: [
           {
-            name: 'gatsby',
-            identifier: 'graphql',
+            name: "gatsby",
+            identifier: "graphql",
           },
         ],
-      }),
-    );
+      })
+    )
 
-    let fragment = null;
-    let typename = null;
+    let fragment = null
+    let typename = null
 
     document.definitions.map(async d => {
       if (d.kind === Kind.FRAGMENT_DEFINITION) {
         if (/WP_.*Block$/.test(d.typeCondition.name.value)) {
-          typename = d.typeCondition.name.value;
-          fragment = d;
+          typename = d.typeCondition.name.value
+          fragment = d
         }
       }
-    });
+    })
 
     if (fragment && typename) {
       const childNode = {
@@ -295,20 +295,20 @@ exports.onCreateNode = async ({ node, createNodeId, createContentDigest, actions
         blockTypename: fragment.typeCondition.name.value,
         parent: node.id,
         internal: {
-          type: 'GutenbergSourceComponentFile',
+          type: "GutenbergSourceComponentFile",
         },
-      };
+      }
 
-      childNode.internal.contentDigest = createContentDigest(JSON.stringify(childNode));
+      childNode.internal.contentDigest = createContentDigest(JSON.stringify(childNode))
 
-      await createNode(childNode);
-      createParentChildLink({ parent: node, child: childNode });
+      await createNode(childNode)
+      createParentChildLink({ parent: node, child: childNode })
     }
   }
-};
+}
 
 exports.createPages = async ({ graphql, createNodeId, createContentDigest, actions }) => {
-  const { createNode } = actions;
+  const { createNode } = actions
 
   const {
     data: { allGutenbergPost, allGutenbergSourceComponentFile },
@@ -337,34 +337,34 @@ exports.createPages = async ({ graphql, createNodeId, createContentDigest, actio
         }
       }
     }
-  `);
+  `)
 
   if (errors) {
-    throw errors;
+    throw errors
   }
 
   const sourceComponentFileByBlockTypename = allGutenbergSourceComponentFile.edges.reduce((obj, { node }) => {
-    obj[node.blockTypename] = node;
+    obj[node.blockTypename] = node
 
-    return obj;
-  }, {});
+    return obj
+  }, {})
 
   await Promise.all(
     allGutenbergPost.edges.map(async ({ node }) => {
-      const { blockTypenames, innerBlocksLevel } = getBlocksMetadata({ blocks: JSON.parse(node.blocksJSON) || [] });
+      const { blockTypenames, innerBlocksLevel } = getBlocksMetadata({ blocks: JSON.parse(node.blocksJSON) || [] })
       const sourceComponentFiles = getSourceComponentFiles({
         blockTypenames,
         sourceComponentFileByBlockTypename,
-      });
+      })
 
       const componentPath = path.join(
         process.cwd(),
-        '.cache',
-        'gatsby-theme-wp-graphql-gutenberg',
-        'components',
+        ".cache",
+        "gatsby-source-wordpress-gutenberg",
+        "components",
         `blocks`,
-        `${node.postId}.js`,
-      );
+        `${node.postId}.js`
+      )
 
       const source = await generateBlocks({
         ...node,
@@ -372,14 +372,14 @@ exports.createPages = async ({ graphql, createNodeId, createContentDigest, actio
         id: node.postId,
         innerBlocksLevel,
         postTypename: `WP_${node.postTypename}`,
-      });
+      })
 
-      const oldSource = await fs.readFile(componentPath, 'utf-8').catch(() => {
-        return null;
-      });
+      const oldSource = await fs.readFile(componentPath, "utf-8").catch(() => {
+        return null
+      })
 
       if (oldSource !== source) {
-        await fs.outputFile(componentPath, source);
+        await fs.outputFile(componentPath, source)
       }
 
       const pageNode = {
@@ -389,22 +389,22 @@ exports.createPages = async ({ graphql, createNodeId, createContentDigest, actio
         path: new URL(node.link).pathname,
         blocksJSON: node.blocksJSON,
         internal: {
-          type: 'GutenbergPage',
+          type: "GutenbergPage",
         },
-      };
+      }
 
-      pageNode.internal.contentDigest = createContentDigest(JSON.stringify(pageNode));
-      await createNode(pageNode);
-    }),
-  );
+      pageNode.internal.contentDigest = createContentDigest(JSON.stringify(pageNode))
+      await createNode(pageNode)
+    })
+  )
 
-  await createPages({ graphql, actions });
-};
+  await createPages({ graphql, actions })
+}
 
-exports.onCreateWebpackConfig = ({ actions, getConfig }) => {
-  actions.setWebpackConfig({
-    resolve: {
-      modules: [path.resolve(path.join(process.cwd(), '.cache'))],
-    },
-  });
-};
+// exports.onCreateWebpackConfig = ({ actions, getConfig }) => {
+//   actions.setWebpackConfig({
+//     resolve: {
+//       modules: [path.resolve(path.join(process.cwd(), ".cache"))],
+//     },
+//   })
+// }

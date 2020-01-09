@@ -1,6 +1,8 @@
 {
   "npmClient": "yarn",
   "packages": [
+    "examples/*",
+    "examples/gatsby-wordpress-gutenberg-default-example/frontend",
     "packages/*"
   ],
   "version": "0.0.0",

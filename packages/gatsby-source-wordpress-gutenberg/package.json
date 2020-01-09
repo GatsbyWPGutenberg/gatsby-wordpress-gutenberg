@@ -26,5 +26,14 @@
   "bugs": {
     "url": "https://github.com/pristas-peter/gatsby-wordpress-gutenberg/issues"
   },
-  "homepage": "https://github.com/pristas-peter/gatsby-wordpress-gutenberg#readme"
+  "homepage": "https://github.com/pristas-peter/gatsby-wordpress-gutenberg#readme",
+  "dependencies": {
+    "apollo-boost": "^0.4.7",
+    "apollo-link-http": "^1.5.16",
+    "fs-extra": "^8.1.0",
+    "graphql": "^14.5.8",
+    "graphql-tag-pluck": "^0.8.7",
+    "graphql-tools": "^4.0.6",
+    "node-fetch": "^2.6.0"
+  }
 }

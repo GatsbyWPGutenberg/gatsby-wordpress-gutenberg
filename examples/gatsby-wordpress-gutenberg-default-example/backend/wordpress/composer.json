@@ -1,0 +1,15 @@
+{
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "https://wpackagist.org"
+    }
+  ],
+  "require": {
+    "composer/installers": "~1.0",
+    "wp-graphql/wp-graphql": "0.4.1",
+    "pristas-peter/wp-graphql-gutenberg": "0.1.4"
+  }
+}

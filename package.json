@@ -8,6 +8,8 @@
   },
   "private": true,
   "workspaces": [
+    "examples/*",
+    "examples/gatsby-wordpress-gutenberg-default-example/frontend",
     "packages/*"
   ],
   "contributors": [
