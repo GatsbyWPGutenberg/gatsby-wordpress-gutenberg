@@ -11,7 +11,7 @@ services:
     depends_on:
       - db
       - composer
-    image: andreccosta/wordpress-xdebug
+    image: wordpress
     restart: always
     ports:
       - 8020:80
@@ -20,7 +20,6 @@ services:
       WORDPRESS_DB_USER: exampleuser
       WORDPRESS_DB_PASSWORD: examplepass
       WORDPRESS_DB_NAME: exampledb
-      XDEBUG_CONFIG: remote_host=host.docker.internal
     volumes:
       - ./wordpress:/var/www/html
       - ../../..:/gatsby-wordpress-gutenberg:ro

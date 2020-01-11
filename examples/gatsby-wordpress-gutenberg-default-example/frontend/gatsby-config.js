@@ -1,3 +1,7 @@
+require("dotenv").config({
+  path: `.env.${process.env.NODE_ENV}`,
+})
+
 module.exports = {
   siteMetadata: {
     title: `Gatsby Default Starter`,
@@ -10,9 +14,9 @@ module.exports = {
     {
       resolve: `gatsby-source-wordpress-gutenberg`,
       options: {
-        linkOptions: {
-          uri: `http://localhost:8020/graphql`,
-        },
+        uri: "http://localhost:8020",
+        user: "admin",
+        password: "admin",
       },
     },
     // this (optional) plugin enables Progressive Web App + Offline functionality

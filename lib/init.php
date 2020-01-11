@@ -22,6 +22,4 @@ if (!class_exists('GatsbyWordpressGutenberg')) {
   }
 }
 
-add_action('init', function () {
-  GatsbyWordpressGutenberg::instance()->setup();
-});
+GatsbyWordpressGutenberg::instance()->setup();
