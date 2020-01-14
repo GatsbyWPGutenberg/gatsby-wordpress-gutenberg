@@ -1,6 +1,8 @@
 const gql = require(`graphql-tag`)
 
-module.exports.fetchAllGutenbergPosts = async ({ client, first, after }) => {
+// Contains functions to fetch data from our counterpart WP plugin Gatsby Gutenberg
+
+const fetchAllGutenbergPosts = async ({ client, first, after }) => {
   const posts = []
 
   const {
@@ -43,7 +45,7 @@ module.exports.fetchAllGutenbergPosts = async ({ client, first, after }) => {
   return posts
 }
 
-module.exports.fetchDynamicBlockNames = async ({ client }) => {
+const fetchDynamicBlockNames = async ({ client }) => {
   const {
     data: { gutenbergDynamicBlockNames },
   } = await client.query({
@@ -57,7 +59,7 @@ module.exports.fetchDynamicBlockNames = async ({ client }) => {
   return gutenbergDynamicBlockNames
 }
 
-module.exports.renderDynamicBlock = async ({ client, blockName, attributes }) => {
+const renderDynamicBlock = async ({ client, blockName, attributes }) => {
   const {
     data: { gutenbergRenderDynamicBlock },
   } = await client.query({
@@ -73,4 +75,10 @@ module.exports.renderDynamicBlock = async ({ client, blockName, attributes }) =>
   })
 
   return gutenbergRenderDynamicBlock
+}
+
+module.exports = {
+  fetchAllGutenbergPosts,
+  fetchDynamicBlockNames,
+  renderDynamicBlock,
 }
