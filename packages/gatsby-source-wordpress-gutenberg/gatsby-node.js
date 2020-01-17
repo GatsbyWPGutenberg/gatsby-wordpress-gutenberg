@@ -24,16 +24,31 @@ const { elapsedSeconds } = require(`./utils`)
 // common fields used in block interface/object graphql types
 // uses gatsby's schema builder syntax
 const BLOCK_INTERFACE_FIELDS = {
-  attributesJSON: `String!`,
-  blockTypeJSON: `String!`,
+  attributesJSON: {
+    type: `String!`,
+    description: `Serialized attributes in JSON format`,
+  },
+  blockTypeJSON: {
+    type: `String!`,
+    description: `Serialized block definition in JSON format`,
+  },
   clientId: `String!`,
   isValid: `Boolean!`,
   isReusableBlock: `Boolean!`,
   isDynamicBlock: `Boolean!`,
-  dynamicContent: `String`,
+  dynamicContent: {
+    type: `String!`,
+    description: `Block's server rendered output`,
+  },
   name: `String!`,
-  originalContent: `String!`,
-  saveContent: `String!`,
+  originalContent: {
+    type: `String!`,
+    description: `Block's output without innerBlocks's output`,
+  },
+  saveContent: {
+    type: `String!`,
+    description: `Block's output including innerBlocks's output`,
+  },
   validationIssues: `[String!]!`,
   innerBlocks: {
     type: `[GutenbergBlock!]!`,
