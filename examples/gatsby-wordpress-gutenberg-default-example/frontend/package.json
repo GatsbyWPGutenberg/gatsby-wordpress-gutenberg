@@ -10,6 +10,7 @@
     "gatsby-source-filesystem": "^2.1.43",
     "gatsby-source-graphql": "^2.1.30",
     "gatsby-source-wordpress-gutenberg": "0.0.0",
+    "gatsby-theme-wordpress-gutenberg": "0.0.0",
     "gatsby-transformer-sharp": "^2.3.7",
     "humps": "^2.0.1",
     "react": "^16.12.0",

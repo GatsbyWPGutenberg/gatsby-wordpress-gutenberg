@@ -1,4 +1,4 @@
-require("dotenv").config({
+require(`dotenv`).config({
   path: `.env.${process.env.NODE_ENV}`,
 })
 
@@ -14,10 +14,13 @@ module.exports = {
     {
       resolve: `gatsby-source-wordpress-gutenberg`,
       options: {
-        uri: "http://localhost:8020",
-        user: "admin",
-        password: "admin",
+        uri: `http://localhost:8020`,
+        user: `admin`,
+        password: `admin`,
       },
+    },
+    {
+      resolve: `gatsby-theme-wordpress-gutenberg`,
     },
     // this (optional) plugin enables Progressive Web App + Offline functionality
     // To learn more, visit: https://gatsby.dev/offline
