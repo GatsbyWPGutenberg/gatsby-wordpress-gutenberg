@@ -30,6 +30,7 @@ services:
       MYSQL_DATABASE: exampledb
       MYSQL_USER: exampleuser
       MYSQL_PASSWORD: examplepass
+      MYSQL_ROOT_PASSWORD: rootpass
       MYSQL_RANDOM_ROOT_PASSWORD: "1"
     volumes:
       - ./db:/var/lib/mysql
