@@ -190,6 +190,10 @@ exports.createSchemaCustomization = ({ actions, schema }) => {
           type: `[GutenbergBlock!]!`,
           resolve: (source, args, context, info) => source.blocksNodes.map(id => context.nodeModel.getNodeById({ id })),
         },
+        blocksJSON: {
+          type: `String!`,
+          description: `Serialized parsed blocks in JSON format`,
+        },
       },
       interfaces: [`Node`],
     })
@@ -353,8 +357,9 @@ exports.onCreateNode = async (options, pluginOptions) => {
     // this will be also useful when using gatsby-source-wordpress later on
     const id = createNodeId(`gutenberg-content-${node.postId}`)
 
-    // we have our single source of thruth stored in gatsby's node
-    const blocksNodes = await sourceBlocks(await getParsedBlocks(page, node.postContent), id)
+    // we have our single source of truth stored in gatsby's node
+    const blocks = await getParsedBlocks(page, node.postContent)
+    const blocksNodes = await sourceBlocks(blocks, id)
 
     const contentNode = {
       id,
@@ -362,6 +367,7 @@ exports.onCreateNode = async (options, pluginOptions) => {
         type: `GutenbergContent`,
       },
       parent: node.id,
+      blocksJSON: JSON.stringify(blocks),
       blocksNodes: blocksNodes.map(child => child.id),
     }
 
