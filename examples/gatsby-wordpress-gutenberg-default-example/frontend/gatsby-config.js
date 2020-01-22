@@ -12,15 +12,12 @@ module.exports = {
     `gatsby-transformer-sharp`,
     `gatsby-plugin-sharp`,
     {
-      resolve: `gatsby-source-wordpress-gutenberg`,
+      resolve: `gatsby-theme-wordpress-gutenberg`,
       options: {
         uri: `http://localhost:8020`,
         user: `admin`,
         password: `admin`,
       },
-    },
-    {
-      resolve: `gatsby-theme-wordpress-gutenberg`,
     },
     // this (optional) plugin enables Progressive Web App + Offline functionality
     // To learn more, visit: https://gatsby.dev/offline
