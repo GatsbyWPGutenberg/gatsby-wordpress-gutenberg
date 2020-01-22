@@ -5,11 +5,17 @@
     {
       "type": "composer",
       "url": "https://wpackagist.org"
+    },
+    {
+      "type": "path",
+      "url": "/gatsby-wordpress-gutenberg",
+      "options": {
+        "symlink": true
+      }
     }
   ],
   "require": {
     "composer/installers": "~1.0",
-    "wp-graphql/wp-graphql": "0.4.1",
-    "pristas-peter/wp-graphql-gutenberg": "0.1.4"
+    "gatsby-wordpress-gutenberg/gatsby-wordpress-gutenberg": "@dev"
   }
 }
