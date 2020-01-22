@@ -17,6 +17,7 @@ const fetchAllGutenbergPosts = async ({ client, first, after }) => {
               id
               postId: gutenbergPostId
               postContent: gutenbergPostContent
+              permalink: gutenbergPermalink
             }
           }
           pageInfo {

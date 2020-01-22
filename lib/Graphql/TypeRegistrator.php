@@ -22,7 +22,6 @@ if (!defined('GATSBY_WORDPRESS_GUTENBERG_GRAPHQL_GUTENBERG_DYNAMIC_BLOCK_RENDER_
   define('GATSBY_WORDPRESS_GUTENBERG_GRAPHQL_GUTENBERG_DYNAMIC_BLOCK_RENDER_FIELD_NAME', 'gutenbergRenderDynamicBlock');
 }
 
-
 // to be able to use use_block_editor_for_post_type()
 require_once ABSPATH . 'wp-admin/includes/admin.php';
 
@@ -110,6 +109,12 @@ class TypeRegistrator
           'resolve' => function ($model) {
             return $model->ID;
           }
+        ],
+        'gutenbergPermalink' => [
+          'type' => 'String',
+          'resolve' => function ($model) {
+            return get_permalink($model->ID);
+          }
         ]
       ]
     ];
@@ -159,7 +164,7 @@ class TypeRegistrator
             'type' => ['non_null' => ['list_of' => ['non_null' => 'String']]],
             'resolve' => function () {
               return get_dynamic_block_names();
-            },
+            }
           ]
         );
 
@@ -170,10 +175,9 @@ class TypeRegistrator
             'type' => 'String',
             'args' => [
               'blockName' => ['type' => 'String'],
-              'attributesJSON' => ['type' => 'String'],
+              'attributesJSON' => ['type' => 'String']
             ],
             'resolve' => function ($source, $args) {
-
               $registry = \WP_Block_Type_Registry::get_instance();
               $server_block_type = $registry->get_registered($args['blockName']);
 
