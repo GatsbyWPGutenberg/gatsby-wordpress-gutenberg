@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e1d1a28c0fd343e30dcde48df338c6bb",
+    "content-hash": "b640d10f36b87426c2cf4ce3a561c62c",
     "packages": [
         {
             "name": "composer/installers",
@@ -277,6 +277,25 @@
             "time": "2018-09-02T14:59:54+00:00"
         },
         {
+            "name": "wp-api/basic-auth",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/WP-API/Basic-Auth.git",
+                "reference": "9e9d5267c7805c024f141d115b224cdee5a10008"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/WP-API/Basic-Auth/zipball/9e9d5267c7805c024f141d115b224cdee5a10008",
+                "reference": "9e9d5267c7805c024f141d115b224cdee5a10008",
+                "shasum": ""
+            },
+            "type": "wordpress-plugin",
+            "notification-url": "https://packagist.org/downloads/",
+            "description": "Basic Authentication handler for the JSON API, used for development and debugging purposes",
+            "time": "2017-12-03T21:39:01+00:00"
+        },
+        {
             "name": "wp-graphql/wp-graphql",
             "version": "v0.5.1",
             "source": {
@@ -339,7 +358,8 @@
     "aliases": [],
     "minimum-stability": "dev",
     "stability-flags": {
-        "gatsby-wordpress-gutenberg/gatsby-wordpress-gutenberg": 20
+        "gatsby-wordpress-gutenberg/gatsby-wordpress-gutenberg": 20,
+        "wp-api/basic-auth": 20
     },
     "prefer-stable": true,
     "prefer-lowest": false,
