@@ -9,7 +9,12 @@ const fetch = require(`node-fetch`)
 const puppeteer = require(`puppeteer`)
 const { pascalize } = require(`humps`)
 
-const { fetchAllGutenbergPosts, fetchDynamicBlockNames, renderDynamicBlock } = require(`./gatsby-gutenberg`)
+const {
+  fetchAllGutenbergPosts,
+  fetchDynamicBlockNames,
+  fetchFirstGutenbergPost,
+  renderDynamicBlock,
+} = require(`./gatsby-gutenberg`)
 const {
   closeEditor,
   blockEditorPage,
@@ -24,6 +29,7 @@ const { elapsedSeconds } = require(`./utils`)
 // common fields used in block interface/object graphql types
 // uses gatsby's schema builder syntax
 const BLOCK_INTERFACE_FIELDS = {
+  id: `ID!`,
   attributesJSON: {
     type: `String!`,
     description: `Serialized attributes in JSON format`,
@@ -172,7 +178,9 @@ exports.onPreBootstrap = async (options, pluginOptions) => {
   jobs.launchBrowser = puppeteer.launch({ headless: true })
 }
 
-exports.createSchemaCustomization = ({ actions, schema }) => {
+exports.createSchemaCustomization = async (options, pluginOptions) => {
+  const { actions, schema } = options
+
   const { createTypes } = actions
 
   createTypes(
@@ -198,6 +206,27 @@ exports.createSchemaCustomization = ({ actions, schema }) => {
       interfaces: [`Node`],
     })
   )
+
+  const post = await fetchFirstGutenbergPost({ client })
+
+  if (post) {
+    const page = await launchGutenberg({ ...options, postId: post.postId }, pluginOptions)
+
+    jobs.getBlockTypes = getBlockTypes(page)
+    const blockTypes = await jobs.getBlockTypes
+
+    blockTypes.map(async blockType => {
+      blockTypeByBlockName.set(blockType.name, blockType)
+
+      createTypes(
+        schema.buildObjectType({
+          name: typenameFromBlockName(blockType.name),
+          fields: BLOCK_INTERFACE_FIELDS,
+          interfaces: [`GutenbergBlock`, `Node`],
+        })
+      )
+    })
+  }
 }
 
 exports.sourceNodes = async (options, pluginOptions) => {
@@ -205,7 +234,6 @@ exports.sourceNodes = async (options, pluginOptions) => {
     actions,
     createContentDigest,
     createNodeId,
-    schema,
     // reporter,
   } = options
 
@@ -223,7 +251,7 @@ exports.sourceNodes = async (options, pluginOptions) => {
 
   await Promise.all(
     posts.map(async (post, index) => {
-      const { createNode, createTypes } = actions
+      const { createNode } = actions
       const { id, __typename, ...rest } = post
 
       const node = {
@@ -238,29 +266,6 @@ exports.sourceNodes = async (options, pluginOptions) => {
 
       node.internal.contentDigest = createContentDigest(JSON.stringify(node))
 
-      // build our block graphql types using blocks library
-      // we don't want to launch gutenberg if there weren't any nodes
-      // so we act upon first index
-      if (index === 0) {
-        const page = await launchGutenberg({ ...options, postId: node.postId }, pluginOptions)
-
-        jobs.getBlockTypes = getBlockTypes(page)
-        const blockTypes = await jobs.getBlockTypes
-
-        blockTypes.map(async blockType => {
-          blockTypeByBlockName.set(blockType.name, blockType)
-
-          createTypes(
-            schema.buildObjectType({
-              name: typenameFromBlockName(blockType.name),
-              fields: BLOCK_INTERFACE_FIELDS,
-              interfaces: [`GutenbergBlock`, `Node`],
-            })
-          )
-        })
-      }
-
-      // then we can create nodes
       await createNode(node)
     })
   )
