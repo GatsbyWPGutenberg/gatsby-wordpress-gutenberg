@@ -130,24 +130,33 @@
         },
         {
             "name": "gatsby-wordpress-gutenberg/gatsby-wordpress-gutenberg",
-            "version": "dev-feature/14-sourcing",
+            "version": "dev-feature/16-core-theme",
             "dist": {
                 "type": "path",
                 "url": "/gatsby-wordpress-gutenberg",
-                "reference": "986b778e648b05b7fcaaaadebb84979314569cde"
+                "reference": "8051fd186154e51809f6339519702406afcb8d09"
             },
             "archive": {
                 "exclude": [
                     "*",
-                    "!gatsby-wordpress-gutenberg.php",
-                    "!lib/"
+                    "!plugin.php",
+                    "!lib/",
+                    "!vendor/"
                 ]
             },
             "require": {
                 "composer/installers": "~1.0",
-                "wp-graphql/wp-graphql": "^0.5.0"
+                "wp-graphql/wp-graphql": "^0.6.0"
             },
             "type": "wordpress-plugin",
+            "autoload": {
+                "psr-4": {
+                    "GatsbyWordpressGutenberg\\": "lib/"
+                },
+                "classmap": [
+                    "lib/"
+                ]
+            },
             "scripts": {
                 "format": [
                     "phpcbf --standard=phpcs.xml.dist --report-summary --report-source"
@@ -297,16 +306,16 @@
         },
         {
             "name": "wp-graphql/wp-graphql",
-            "version": "v0.5.1",
+            "version": "v0.6.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/wp-graphql/wp-graphql.git",
-                "reference": "c6fbc3bdbce610cdc5996cd2023b37606d09de0c"
+                "reference": "61640c1ea820e1e20abd4dc3118ee41aec0f13d0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/wp-graphql/wp-graphql/zipball/c6fbc3bdbce610cdc5996cd2023b37606d09de0c",
-                "reference": "c6fbc3bdbce610cdc5996cd2023b37606d09de0c",
+                "url": "https://api.github.com/repos/wp-graphql/wp-graphql/zipball/61640c1ea820e1e20abd4dc3118ee41aec0f13d0",
+                "reference": "61640c1ea820e1e20abd4dc3118ee41aec0f13d0",
                 "shasum": ""
             },
             "require": {
@@ -351,7 +360,7 @@
                 }
             ],
             "description": "GraphQL API for WordPress",
-            "time": "2019-12-13T17:18:57+00:00"
+            "time": "2020-01-21T22:28:16+00:00"
         }
     ],
     "packages-dev": [],
