@@ -19,6 +19,15 @@ module.exports = {
         password: `admin`,
       },
     },
+    {
+      resolve: `gatsby-source-graphql`,
+      options: {
+        url: `http://localhost:8020/graphql`,
+        typeName: `WP`,
+        // Field under which the remote schema will be accessible. You'll use this in your Gatsby query
+        fieldName: `wp`,
+      },
+    },
     // this (optional) plugin enables Progressive Web App + Offline functionality
     // To learn more, visit: https://gatsby.dev/offline
     // `gatsby-plugin-offline`,
