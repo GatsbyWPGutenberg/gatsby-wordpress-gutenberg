@@ -8,6 +8,7 @@ const fetch = require(`node-fetch`)
 
 const puppeteer = require(`puppeteer`)
 const { pascalize } = require(`humps`)
+const proxy = require(`http-proxy-middleware`)
 
 const {
   fetchAllGutenbergPosts,
@@ -190,23 +191,65 @@ exports.createSchemaCustomization = async (options, pluginOptions) => {
     })
   )
 
+  const contentTypenames = [`GutenbergContent`, `GutenbergPreviewContent`]
+
+  contentTypenames.forEach(name => {
+    createTypes(
+      schema.buildObjectType({
+        name,
+        fields: {
+          blocks: {
+            type: `[GutenbergBlock!]!`,
+            resolve: (source, args, context, info) =>
+              source.blocksNodes.map(id => context.nodeModel.getNodeById({ id })),
+          },
+          blocksJSON: {
+            type: `String!`,
+            description: `Serialized parsed blocks in JSON format`,
+          },
+        },
+        interfaces: [`Node`],
+      })
+    )
+  })
+
   createTypes(
     schema.buildObjectType({
-      name: `GutenbergContent`,
+      name: `GutenbergPost`,
       fields: {
-        blocks: {
-          type: `[GutenbergBlock!]!`,
-          resolve: (source, args, context, info) => source.blocksNodes.map(id => context.nodeModel.getNodeById({ id })),
+        postId: {
+          type: `Int!`,
         },
-        blocksJSON: {
-          type: `String!`,
-          description: `Serialized parsed blocks in JSON format`,
+        gutenbergContent: {
+          type: `GutenbergContent`,
+          resolve: (source, args, context, info) => {
+            const id = source.fields && source.fields.gutenbergContent___NODE
+
+            if (id) {
+              return context.nodeModel.getNodeById({ id })
+            }
+
+            return null
+          },
+        },
+        gutenbergPreviewContent: {
+          type: `GutenbergPreviewContent`,
+          resolve: (source, args, context, info) => {
+            const id = source.fields && source.fields.gutenbergPreviewContent___NODE
+
+            if (id) {
+              return context.nodeModel.getNodeById({ id })
+            }
+
+            return null
+          },
         },
       },
       interfaces: [`Node`],
     })
   )
 
+  blockTypeByBlockName.clear()
   const post = await fetchFirstGutenbergPost({ client })
 
   if (post) {
@@ -237,12 +280,31 @@ exports.sourceNodes = async (options, pluginOptions) => {
     // reporter,
   } = options
 
+  const { createNode } = actions
+
+  await Promise.all(
+    Array.from(blockTypeByBlockName.entries()).map(async ([blockName, blockType]) => {
+      const node = {
+        id: createNodeId(`gutenberg-block-type-${blockName}`),
+        blockName,
+        blockTypename: typenameFromBlockName(blockName),
+        blockTypeJSON: JSON.stringify(blockType),
+        internal: {
+          type: `GutenbergBlockType`,
+        },
+      }
+
+      node.internal.contentDigest = createContentDigest(JSON.stringify(node))
+      await createNode(node)
+    })
+  )
+
   // we should depracate this upon new gatsby-source-wordpress and use native sources instead
   const posts = await fetchAllGutenbergPosts({ client, first: 100 })
 
   // refetch/reset mappings
   dynamicBlockNames = await fetchDynamicBlockNames({ client })
-  blockTypeByBlockName.clear()
+
   postByPostId.clear()
 
   posts.forEach(post => {
@@ -251,14 +313,11 @@ exports.sourceNodes = async (options, pluginOptions) => {
 
   await Promise.all(
     posts.map(async (post, index) => {
-      const { createNode } = actions
-      const { id, __typename, ...rest } = post
+      const { id, ...rest } = post
 
       const node = {
         ...rest,
         id: createNodeId(`gutenberg-post-${id}`),
-        postTypename: __typename,
-        nodeId: id,
         internal: {
           type: `GutenbergPost`,
         },
@@ -274,87 +333,103 @@ exports.sourceNodes = async (options, pluginOptions) => {
 exports.onCreateNode = async (options, pluginOptions) => {
   const {
     node,
-    actions: { createNode, createParentChildLink },
+    actions: { createNode, createParentChildLink, createNodeField },
     createContentDigest,
     createNodeId,
+    getNodesByType,
   } = options
+
+  const sourceBlocks = async ({
+    blocks,
+    parent,
+    innerLevel = 0,
+    nodeIdPrefix,
+    getReusableBlockBlocks,
+    getSaveContent,
+  }) =>
+    await Promise.all(
+      blocks.map(async (block, index) => {
+        let source = block
+
+        // block can be reused in gutenberg admin (stored as wp_block post type)
+        let isReusableBlock = false
+
+        // block has registered render function in php
+        let isDynamicBlock = dynamicBlockNames.includes(source.name)
+
+        // core/block represents reusable block
+        // we will not represent core/block as our type, but instead use the type which it refrences to
+        // so reusable blocks are transparent when queried
+        if (block.name === `core/block`) {
+          // reference to wp_block post_type id is stored in ref attribute
+
+          const reusableBlockBlocks = await getReusableBlockBlocks(block.attributes.ref)
+          source = reusableBlockBlocks[0]
+          isReusableBlock = true
+
+          // core/block is for some reason also present in dynamic blocks
+          isDynamicBlock = false
+        }
+
+        const { innerBlocks, ...rest } = source
+
+        // block's clientId property is not consistent
+        // so we use blocks position in nested array as its id
+        const id = createNodeId(`${nodeIdPrefix}-${node.postId}-${innerLevel}-${index}`)
+
+        // recursively source inner blocks and set theit parent node to this node
+        const innerBlocksNodes = await sourceBlocks({
+          blocks: innerBlocks,
+          parent: id,
+          innerLevel: innerLevel + 1,
+          nodeIdPrefix,
+          getReusableBlockBlocks,
+          getSaveContent,
+        })
+
+        const blockNode = {
+          id,
+          internal: {
+            type: typenameFromBlockName(source.name),
+          },
+          ...rest,
+          isReusableBlock,
+          // gatsby's parent node reference
+          parent,
+          // serialize attributes (may be useful in theme)
+          attributesJSON: JSON.stringify(source.attributes),
+          // serialize block type definition from registry
+          blockTypeJSON: JSON.stringify(blockTypeByBlockName.get(source.name)),
+          // every block further down the line will have reference to parent post
+          parentPost___NODE: node.id,
+          // block's output including inner blocks
+          saveContent: await getSaveContent(source),
+          isDynamicBlock,
+          // dynamic html rendered from php
+          dynamicContent: isDynamicBlock
+            ? await renderDynamicBlock({ client, blockName: source.name, attributes: source.attributes })
+            : null,
+          // we use this field in createCustomResolver to have nice interfaces in graphql types instead of
+          // gatsby's default unions
+          innerBlocksNodes: innerBlocksNodes.map(child => child.id),
+        }
+
+        blockNode.internal.contentDigest = createContentDigest(JSON.stringify(blockNode))
+        await createNode(blockNode)
+
+        innerBlocksNodes.forEach(child => {
+          createParentChildLink({
+            parent: blockNode,
+            child,
+          })
+        })
+
+        return blockNode
+      })
+    )
 
   if (node.internal.type === `GutenbergPost`) {
     const page = await launchGutenberg({ ...options, postId: node.postId }, pluginOptions)
-
-    const sourceBlocks = async (blocks, parent, innerLevel = 0) =>
-      await Promise.all(
-        blocks.map(async (block, index) => {
-          let source = block
-
-          // block can be reused in gutenberg admin (stored as wp_block post type)
-          let isReusableBlock = false
-
-          // block has registered render function in php
-          let isDynamicBlock = dynamicBlockNames.includes(source.name)
-
-          // core/block represents reusable block
-          // we will not represent core/block as our type, but instead use the type which it refrences to
-          // so reusable blocks are transparent when queried
-          if (block.name === `core/block`) {
-            // reference to wp_block post_type id is stored in ref attribute
-            const reusableBlockBlocks = await getParsedBlocks(page, postByPostId.get(block.attributes.ref).postContent)
-            source = reusableBlockBlocks[0]
-            isReusableBlock = true
-
-            // core/block is for some reason also present in dynamic blocks
-            isDynamicBlock = false
-          }
-
-          const { innerBlocks, ...rest } = source
-
-          // block's clientId property is not consistent
-          // so we use blocks position in nested array as its id
-          const id = createNodeId(`gutenberg-block-${node.postId}-${innerLevel}-${index}`)
-
-          // recursively source inner blocks and set theit parent node to this node
-          const innerBlocksNodes = await sourceBlocks(innerBlocks, id, innerLevel + 1)
-
-          const blockNode = {
-            id,
-            internal: {
-              type: typenameFromBlockName(source.name),
-            },
-            ...rest,
-            isReusableBlock,
-            // gatsby's parent node reference
-            parent,
-            // serialize attributes (may be useful in theme)
-            attributesJSON: JSON.stringify(source.attributes),
-            // serialize block type definition from registry
-            blockTypeJSON: JSON.stringify(blockTypeByBlockName.get(source.name)),
-            // every block further down the line will have reference to parent post
-            parentPost___NODE: node.id,
-            // block's output including inner blocks
-            saveContent: await getSaveContent(page, source),
-            isDynamicBlock,
-            // dynamic html rendered from php
-            dynamicContent: isDynamicBlock
-              ? await renderDynamicBlock({ client, blockName: source.name, attributes: source.attributes })
-              : null,
-            // we use this field in createCustomResolver to have nice interfaces in graphql types instead of
-            // gatsby's default unions
-            innerBlocksNodes: innerBlocksNodes.map(child => child.id),
-          }
-
-          blockNode.internal.contentDigest = createContentDigest(JSON.stringify(blockNode))
-          await createNode(blockNode)
-
-          innerBlocksNodes.forEach(child => {
-            createParentChildLink({
-              parent: blockNode,
-              child,
-            })
-          })
-
-          return blockNode
-        })
-      )
 
     // this is the "master" node containing all root blocks
     // this is needed to be able to have nice interfaces upon querying and hence we can't
@@ -364,7 +439,13 @@ exports.onCreateNode = async (options, pluginOptions) => {
 
     // we have our single source of truth stored in gatsby's node
     const blocks = await getParsedBlocks(page, node.postContent)
-    const blocksNodes = await sourceBlocks(blocks, id)
+    const blocksNodes = await sourceBlocks({
+      blocks,
+      parent: id,
+      nodeIdPrefix: `gutenberg-block`,
+      getReusableBlockBlocks: ref => getParsedBlocks(page, postByPostId.get(ref).postContent),
+      getSaveContent: source => getSaveContent(page, source),
+    })
 
     const contentNode = {
       id,
@@ -390,7 +471,104 @@ exports.onCreateNode = async (options, pluginOptions) => {
       parent: node,
       child: contentNode,
     })
+
+    createNodeField({
+      node,
+      name: `gutenbergContent___NODE`,
+      value: id,
+    })
   }
+
+  if (node.internal.type === `GutenbergPreview`) {
+    const id = createNodeId(`gutenberg-preview-content-${node.postId}`)
+
+    const { blocks, blocksByCoreBlockId } = JSON.parse(node.data)
+
+    const blocksNodes = await sourceBlocks({
+      blocks,
+      parent: id,
+      nodeIdPrefix: `gutenberg-preview-block`,
+      getReusableBlockBlocks: ref => blocksByCoreBlockId[ref],
+      getSaveContent: source => source.saveContent,
+    })
+
+    const contentNode = {
+      id,
+      internal: {
+        type: `GutenbergPreviewContent`,
+      },
+      parent: node.id,
+      blocksJSON: JSON.stringify(blocks),
+      blocksNodes: blocksNodes.map(child => child.id),
+    }
+
+    contentNode.internal.contentDigest = createContentDigest(JSON.stringify(contentNode))
+    await createNode(contentNode)
+
+    blocksNodes.forEach(child => {
+      createParentChildLink({
+        parent: contentNode,
+        child,
+      })
+    })
+
+    createParentChildLink({
+      parent: node,
+      child: contentNode,
+    })
+
+    const gutenbergPostNodes = getNodesByType(`GutenbergPost`)
+
+    for (const gutenbergPostNode of gutenbergPostNodes) {
+      if (gutenbergPostNode.postId === node.postId) {
+        createNodeField({
+          node: gutenbergPostNode,
+          name: `gutenbergPreviewContent___NODE`,
+          value: id,
+        })
+
+        break
+      }
+    }
+  }
+}
+
+exports.createResolvers = ({ createResolvers, createContentDigest, createNodeId, actions }, pluginOptions) => {
+  const { createNode } = actions
+
+  createResolvers({
+    Query: {
+      sourceWordpressGutenbergPreview: {
+        type: `Boolean!`,
+        args: {
+          data: {
+            type: `String!`,
+          },
+        },
+        resolve: async (source, args) => {
+          const data = JSON.parse(args.data)
+
+          await Promise.all(
+            Object.keys(data).map(async postId => {
+              const node = {
+                id: createNodeId(`gutenberg-preview-${postId}`),
+                postId: parseInt(postId, 10),
+                data: JSON.stringify(data[postId]),
+                internal: {
+                  type: `GutenbergPreview`,
+                },
+              }
+
+              node.internal.contentDigest = createContentDigest(JSON.stringify(node))
+              await createNode(node)
+            })
+          )
+
+          return true
+        },
+      },
+    },
+  })
 }
 
 exports.createPages = async options => {
@@ -398,3 +576,24 @@ exports.createPages = async options => {
   // it will be opened upon new node creation again
   await closeGutenberg(options)
 }
+
+// exports.onCreateDevServer = (options, pluginOptions) => {
+//   const { app, store } = options
+
+//   const {
+//     program: { host, port, keyFile },
+//   } = store.getState()
+
+//   const url = new URL(`${keyFile ? `https` : `http`}://${host}:${port}`)
+
+//   const proxyMiddleware = proxy({
+//     changeOrigin: true,
+//     xfwd: true,
+//     target: pluginOptions.uri,
+//     headers: {
+//       "X-Gatsby-Wordpress-Gutenberg-Preview-Url": url.origin,
+//     },
+//   })
+
+//   app.use(`/wp*`, proxyMiddleware)
+// }

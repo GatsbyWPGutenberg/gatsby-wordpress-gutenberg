@@ -30,25 +30,27 @@ jobs.wpRemoteSchema = jobs.wpIntrospectSchema.then(schema =>
 )
 
 exports.createResolvers = ({ createResolvers }) => {
+  const resolve = async (source, args, context, info) => {
+    if (source) {
+      const { postId } = source
+
+      return await delegateToSchema({
+        schema: await jobs.wpRemoteSchema,
+        operation: `query`,
+        fieldName: `contentNode`,
+        args: { id: postId, idType: `DATABASE_ID` },
+        context,
+        info,
+      })
+    }
+    return null
+  }
+
   const resolvers = {
     GutenbergPost: {
       contentNode: {
         type: `WP_ContentNode`,
-        resolve: async (source, args, context, info) => {
-          if (source) {
-            const { postId } = source
-
-            return await delegateToSchema({
-              schema: await jobs.wpRemoteSchema,
-              operation: `query`,
-              fieldName: `contentNode`,
-              args: { id: postId, idType: `DATABASE_ID` },
-              context,
-              info,
-            })
-          }
-          return null
-        },
+        resolve,
       },
     },
   }

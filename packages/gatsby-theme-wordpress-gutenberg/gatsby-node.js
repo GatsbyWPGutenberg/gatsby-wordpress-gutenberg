@@ -7,34 +7,48 @@ const chokidar = require(`chokidar`)
 
 const PLUGIN_NAME = require(`./package.json`).name
 const BLOCKS_PATH = path.join(`src`, PLUGIN_NAME, `blocks`)
+const PREVIEW_BLOCKS_PATH = path.join(`src`, PLUGIN_NAME, `preview-blocks`)
 const PAGES_PATH = path.join(`src`, PLUGIN_NAME, `pages`)
 
 const permalinkToTypename = ({ permalink }) => pascalize(new URL(permalink).pathname.replace(/(^\/|\/$)/g, ``))
 
-const fetchAllGutenbergContent = async ({ graphql }) => {
+const fetchAllGutenbergPost = async ({ graphql }) => {
   const { data, errors } = await graphql(`
     query {
-      allGutenbergContent {
+      allGutenbergPost {
         edges {
           node {
-            id
-            parent {
-              ... on GutenbergPost {
-                postId
-                permalink
-              }
-            }
-            blocks {
-              __typename
-              ... on GutenbergBlock {
-                name
-                id
-              }
-              innerBlocks {
+            postId
+            permalink
+            gutenbergContent {
+              blocks {
                 __typename
                 ... on GutenbergBlock {
                   name
                   id
+                }
+                innerBlocks {
+                  __typename
+                  ... on GutenbergBlock {
+                    name
+                    id
+                  }
+                }
+              }
+            }
+            gutenbergPreviewContent {
+              blocks {
+                __typename
+                ... on GutenbergBlock {
+                  name
+                  id
+                }
+                innerBlocks {
+                  __typename
+                  ... on GutenbergBlock {
+                    name
+                    id
+                  }
                 }
               }
             }
@@ -135,38 +149,114 @@ export default Blocks
 
 // creates source code for page
 const createPageComponentSource = ({
-  id,
   postId,
   blocksFragmentName,
   blocksComponentPath,
+  previewBlocksFragmentName,
+  previewBlocksComponentPath,
   templateComponentPath,
   templateComponentFragmentName,
-}) => `/* eslint-disable */
+}) => {
+  const hasPreview = previewBlocksComponentPath && previewBlocksFragmentName
+
+  return `/* eslint-disable */
 /* Warning: this file is autogerated, any changes would be lost */
 import React from 'react'
 import { graphql } from 'gatsby'
 import Blocks from '${blocksComponentPath}'
+${hasPreview ? `import PreviewBlocks from '${previewBlocksComponentPath}'` : ``}
 import PageTemplate from '${templateComponentPath}'
 
 export const pageQuery = graphql\`
   query GetGutenbergContent${postId}($postId: Int!) {
     gutenbergPost(postId: {eq: $postId}) {
-      childGutenbergContent {
+      gutenbergContent {
         blocks {
           ...${blocksFragmentName}
         }
       }
+      ${
+        hasPreview
+          ? `gutenbergPreviewContent {
+        blocks {
+          ...${previewBlocksFragmentName}
+        }
+      }`
+          : ``
+      }
     }
+    
     ${templateComponentFragmentName ? `...${templateComponentFragmentName}` : ``}
   }\`
+${
+  hasPreview
+    ? `
+const Page = props => {
+  let children = <Blocks blocks={props.data.gutenbergPost.gutenbergContent.blocks} />
 
+  if (typeof window !== undefined) {
+    const params = new URLSearchParams(window.location.search)
+
+    if (params.get('preview') === 'true' && props.data.gutenbergPost.gutenbergPreviewContent) {
+      children = <PreviewBlocks blocks={props.data.gutenbergPost.gutenbergPreviewContent.blocks} />
+    }
+  }
+
+  return (
+    <PageTemplate {...props}>
+      {children}
+    </PageTemplate>
+  )
+
+}
+  `
+    : `
 const Page = props =>
   <PageTemplate {...props}>
-    <Blocks blocks={props.data.gutenbergPost.childGutenbergContent.blocks} />
+    <Blocks blocks={props.data.gutenbergPost.gutenbergContent.blocks} />
   </PageTemplate>
+`
+}
 
 export default Page
 `
+}
+
+const permalinkToFilename = ({ permalink }) => {
+  const pathname = new URL(permalink).pathname
+  if (pathname === `/`) {
+    return `index`
+  }
+
+  return pathname.replace(/\/$/, ``)
+}
+
+// extracts graphql sdl from graphql`` tag inside component file
+const extractGraphql = async ({ componentPath }) => {
+  try {
+    const sdl = await pluck.fromFile(componentPath, {
+      modules: [
+        {
+          name: `gatsby`,
+          identifier: `graphql`,
+        },
+      ],
+    })
+
+    return parse(sdl)
+  } catch (err) {
+    return null
+  }
+}
+
+// writes file to disk only on change/new file (avoids unnecessary rebuilds)
+const writeFile = async ({ filePath, data }) => {
+  const oldData = await fs.readFile(filePath, `utf-8`).catch(() => null)
+
+  if (oldData !== data) {
+    await fs.outputFile(filePath, data)
+  }
+}
 
 // resolves component path which will be used in our generated sources
 // uses same alghoritm as component shadowing so the component which
@@ -210,15 +300,6 @@ const resolveComponentPath = async ({ store, componentPath }) => {
   return null
 }
 
-const permalinkToFilename = ({ permalink }) => {
-  const pathname = new URL(permalink).pathname
-  if (pathname === `/`) {
-    return `index`
-  }
-
-  return pathname.replace(/\/$/, ``)
-}
-
 // resolves template component path which will be used in our generated sources as the page component
 // uses same alghoritm as component shadowing so the component which
 // is closest to the user's project in the template hierarchy wins
@@ -234,31 +315,47 @@ const resolveTemplateComponentPath = async ({ store, postId, permalink }) =>
     componentPath: path.join(`templates`, `index`),
   }))
 
-// extracts graphql sdl from graphql`` tag inside component file
-const extractGraphql = async ({ componentPath }) => {
-  try {
-    const sdl = await pluck.fromFile(componentPath, {
-      modules: [
-        {
-          name: `gatsby`,
-          identifier: `graphql`,
-        },
-      ],
-    })
+const resolveUnknownComponentPath = options =>
+  resolveComponentPath({
+    ...options,
+    componentPath: path.join(`components`, `unknown-block`),
+  })
 
-    return parse(sdl)
-  } catch (err) {
-    return null
-  }
+const resolveBlockComponentPath = async ({ blockName, unknownBlockComponentPath, ...options }) => {
+  const possibleComponentPath = await resolveComponentPath({
+    ...options,
+    componentPath: path.join(`components`, `blocks`, blockName),
+  })
+
+  return possibleComponentPath || unknownBlockComponentPath
 }
 
-// writes file to disk only on change/new file (avoids unnecessary rebuilds)
-const writeFile = async ({ filePath, data }) => {
-  const oldData = await fs.readFile(filePath, `utf-8`).catch(() => null)
+const resolveBlockFragment = async ({
+  componentPath,
+  // reporter
+}) => {
+  const document = await extractGraphql({ componentPath })
 
-  if (oldData !== data) {
-    await fs.outputFile(filePath, data)
+  if (document) {
+    let fragment
+
+    document.definitions.forEach(d => {
+      if (d.kind === Kind.FRAGMENT_DEFINITION) {
+        if (fragment) {
+          throw new Error(`GraphQL Error: Component ${componentPath} must contain only one fragment definition`)
+        }
+
+        fragment = d
+      }
+    })
+
+    return fragment
   }
+  // idk if this should be enforced
+  //  else {
+  //   reporter.warn(`Fragment definition in ${componentPath} not found`)
+  // }
+  return null
 }
 
 // processess all gutenberg content nodes and generates source files
@@ -293,128 +390,132 @@ const processContent = async (options, pluginOptions) => {
   const { program } = store.getState()
   const { createPage } = actions
 
-  const { allGutenbergContent } = await fetchAllGutenbergContent({ graphql })
+  const { allGutenbergPost } = await fetchAllGutenbergPost({ graphql })
 
-  if (allGutenbergContent.edges.length) {
+  if (allGutenbergPost.edges.length) {
     const componentPathByName = new Map()
+    const fragmentNameByName = new Map()
 
-    const unknownBlockComponentPath = await resolveComponentPath({
-      ...options,
-      componentPath: path.join(`components`, `unknown-block`),
-    })
+    const unknownBlockComponentPath = await resolveUnknownComponentPath(options)
 
-    await Promise.all(
-      allGutenbergContent.edges.map(async ({ node }) => {
-        const {
-          blocks,
-          parent: { postId, permalink },
-          id,
-        } = node
+    const visitBlocks = async ({ blocks }) => {
+      const blockTypenameByName = new Map()
+      let innerBlocksLevel = 0
 
-        const blockTypenameByName = new Map()
-        let innerBlocksLevel = 0
+      const visitBlock = async ({ block }) => {
+        const { name } = block
+        blockTypenameByName.set(name, block.__typename)
 
-        const visitInnerBlock = async ({ innerBlock, currentInnerBlocksLevel }) => {
-          const { name } = innerBlock
-
-          innerBlocksLevel = Math.max(currentInnerBlocksLevel, innerBlocksLevel)
-          blockTypenameByName.set(name, innerBlock.__typename)
-
-          const { innerBlocks } = await fetchInnerBlocks({ graphql, block: innerBlock })
-
-          await Promise.all(
-            innerBlocks.map(async innerBlock => {
-              await visitInnerBlock({ innerBlock, currentInnerBlocksLevel: currentInnerBlocksLevel + 1 })
-            })
+        if (!componentPathByName.has(name)) {
+          componentPathByName.set(
+            name,
+            await resolveBlockComponentPath({ blockName: name, unknownBlockComponentPath, ...options })
           )
         }
 
-        await Promise.all(
-          blocks.map(async block => {
-            blockTypenameByName.set(block.name, block.__typename)
+        if (!fragmentNameByName.has(name)) {
+          const fragment = await resolveBlockFragment({ componentPath: componentPathByName.get(name) })
 
-            await Promise.all(
-              block.innerBlocks.map(async innerBlock => {
-                await visitInnerBlock({ innerBlock, currentInnerBlocksLevel: 1 })
-              })
-            )
-          })
-        )
+          fragmentNameByName.set(name, fragment.name.value)
+        }
+      }
 
-        const blockFragmentNames = new Set()
+      const visitInnerBlock = async ({ innerBlock, currentInnerBlocksLevel }) => {
+        innerBlocksLevel = Math.max(currentInnerBlocksLevel, innerBlocksLevel)
+
+        const { innerBlocks } = await fetchInnerBlocks({ graphql, block: innerBlock })
 
         await Promise.all(
-          Array.from(blockTypenameByName.keys()).map(async blockName => {
-            if (!componentPathByName.has(blockName)) {
-              const possibleComponentPath = await resolveComponentPath({
-                ...options,
-                componentPath: path.join(`components`, `blocks`, blockName),
-              })
-
-              componentPathByName.set(blockName, possibleComponentPath || unknownBlockComponentPath)
-            }
-
-            const componentPath = componentPathByName.get(blockName)
-            const document = await extractGraphql({ componentPath })
-
-            if (document) {
-              let fragment
-
-              document.definitions.forEach(d => {
-                if (d.kind === Kind.FRAGMENT_DEFINITION) {
-                  if (fragment) {
-                    throw new Error(
-                      `GraphQL Error: Component ${componentPath} must contain only one fragment definition`
-                    )
-                  }
-
-                  fragment = d
-                }
-              })
-
-              blockFragmentNames.add(fragment.name.value)
-            }
-            // idk if this should be enforced
-            //  else {
-            //   reporter.warn(`Fragment definition in ${componentPath} not found`)
-            // }
+          innerBlocks.map(async innerBlock => {
+            await visitInnerBlock({ innerBlock, currentInnerBlocksLevel: currentInnerBlocksLevel + 1 })
           })
         )
+      }
 
-        const fragmentName = `GutenbergBlocks${postId}`
+      await Promise.all(
+        blocks.map(async block => {
+          await visitBlock({ block })
 
-        const blocksComponentPath = path.join(program.directory, BLOCKS_PATH, `by-id`, `${postId}.js`)
-
-        await writeFile({
-          filePath: blocksComponentPath,
-          data: createBlocksComponentSource({
-            sdl: createFragment({
-              name: fragmentName,
-              blockFragmentNames: Array.from(blockFragmentNames),
-              innerBlocksLevel,
-            }),
-            blockTypenameByName,
-            componentPathByName,
-          }),
+          await Promise.all(
+            block.innerBlocks.map(async innerBlock => {
+              await visitInnerBlock({ innerBlock, currentInnerBlocksLevel: 1 })
+            })
+          )
         })
+      )
 
-        await writeFile({
-          filePath: path.join(
+      return { blockTypenameByName, innerBlocksLevel }
+    }
+
+    await Promise.all(
+      allGutenbergPost.edges.map(async ({ node }) => {
+        const { postId, permalink, gutenbergContent, gutenbergPreviewContent } = node
+
+        const createBlocksComponent = async ({ blocks, isPreview }) => {
+          const { innerBlocksLevel, blockTypenameByName } = await visitBlocks({ blocks })
+
+          const blockFragmentNames = Array.from(blockTypenameByName.keys()).map(name => fragmentNameByName.get(name))
+          const fragmentName = `${!isPreview ? `GutenbergBlocks` : `GutenbergPreviewBlocks`}${postId}`
+
+          const componentPath = path.join(
             program.directory,
-            BLOCKS_PATH,
-            `by-permalink`,
-            `${permalinkToFilename({ permalink })}.js`
-          ),
-          data: createBlocksComponentSource({
-            sdl: createFragment({
-              name: `GutenbergBlocks${permalinkToTypename({ permalink })}`,
-              blockFragmentNames: Array.from(blockFragmentNames),
-              innerBlocksLevel,
+            !isPreview ? BLOCKS_PATH : PREVIEW_BLOCKS_PATH,
+            `by-id`,
+            `${postId}.js`
+          )
+
+          await writeFile({
+            filePath: componentPath,
+            data: createBlocksComponentSource({
+              sdl: createFragment({
+                name: fragmentName,
+                blockFragmentNames,
+                innerBlocksLevel,
+              }),
+              blockTypenameByName,
+              componentPathByName,
             }),
-            blockTypenameByName,
-            componentPathByName,
-          }),
+          })
+
+          await writeFile({
+            filePath: path.join(
+              program.directory,
+              !isPreview ? BLOCKS_PATH : PREVIEW_BLOCKS_PATH,
+              `by-permalink`,
+              `${permalinkToFilename({ permalink })}.js`
+            ),
+            data: createBlocksComponentSource({
+              sdl: createFragment({
+                name: `${!isPreview ? `GutenbergBlocks` : `GutenbergPreviewBlocks`}${permalinkToTypename({
+                  permalink,
+                })}`,
+                blockFragmentNames,
+                innerBlocksLevel,
+              }),
+              blockTypenameByName,
+              componentPathByName,
+            }),
+          })
+
+          return { fragmentName, componentPath }
+        }
+
+        const { fragmentName: blocksFragmentName, componentPath: blocksComponentPath } = await createBlocksComponent({
+          blocks: gutenbergContent.blocks,
         })
+
+        let previewBlocksFragmentName = null
+        let previewBlocksComponentPath = null
+
+        if (gutenbergPreviewContent) {
+          const result = await createBlocksComponent({
+            blocks: gutenbergPreviewContent.blocks,
+            isPreview: true,
+          })
+
+          previewBlocksComponentPath = result.componentPath
+          previewBlocksFragmentName = result.fragmentName
+        }
 
         const templateComponentPath = await resolveTemplateComponentPath({
           ...options,
@@ -445,10 +546,11 @@ const processContent = async (options, pluginOptions) => {
         await writeFile({
           filePath: pageComponentPath,
           data: createPageComponentSource({
-            id,
             postId,
-            blocksFragmentName: fragmentName,
+            blocksFragmentName,
             blocksComponentPath,
+            previewBlocksFragmentName,
+            previewBlocksComponentPath,
             templateComponentPath,
             templateComponentFragmentName: templateComponentFragment && templateComponentFragment.name.value,
           }),
