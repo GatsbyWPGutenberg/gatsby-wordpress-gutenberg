@@ -68,5 +68,5 @@ yarn-error.log
 # Yarn Integrity file
 .yarn-integrity
 
-# Db
-db
+src/gatsby-theme-wordpress-gutenberg/pages/
+src/gatsby-theme-wordpress-gutenberg/blocks/

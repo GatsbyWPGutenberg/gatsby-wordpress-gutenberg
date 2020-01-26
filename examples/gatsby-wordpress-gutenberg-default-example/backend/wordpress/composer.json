@@ -16,6 +16,7 @@
   ],
   "require": {
     "composer/installers": "~1.0",
-    "gatsby-wordpress-gutenberg/gatsby-wordpress-gutenberg": "@dev"
+    "gatsby-wordpress-gutenberg/gatsby-wordpress-gutenberg": "@dev",
+    "wp-api/basic-auth": "dev-master"
   }
 }

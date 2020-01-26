@@ -23,6 +23,14 @@ services:
     volumes:
       - ./wordpress:/var/www/html
       - ../../..:/gatsby-wordpress-gutenberg:ro
+  cli:
+    depends_on:
+      - db
+      - wordpress
+    image: wordpress:cli
+    volumes:
+      - ./wordpress:/var/www/html
+      - ../../..:/gatsby-wordpress-gutenberg:ro
   db:
     image: mysql:5.7
     restart: always

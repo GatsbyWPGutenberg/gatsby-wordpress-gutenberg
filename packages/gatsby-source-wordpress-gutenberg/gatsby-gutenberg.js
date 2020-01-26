@@ -2,6 +2,26 @@ const gql = require(`graphql-tag`)
 
 // Contains functions to fetch data from our counterpart WP plugin Gatsby Gutenberg
 
+const fetchFirstGutenbergPost = async ({ client }) => {
+  const {
+    data: { gutenbergPosts },
+  } = await client.query({
+    query: gql`
+      query GetFirstGutenbergPost {
+        gutenbergPosts(first: 1) {
+          edges {
+            node {
+              postId: gutenbergPostId
+            }
+          }
+        }
+      }
+    `,
+  })
+
+  return gutenbergPosts.edges.length && gutenbergPosts.edges[0].node
+}
+
 const fetchAllGutenbergPosts = async ({ client, first, after }) => {
   const posts = []
 
@@ -17,6 +37,7 @@ const fetchAllGutenbergPosts = async ({ client, first, after }) => {
               id
               postId: gutenbergPostId
               postContent: gutenbergPostContent
+              permalink: gutenbergPermalink
             }
           }
           pageInfo {
@@ -78,6 +99,7 @@ const renderDynamicBlock = async ({ client, blockName, attributes }) => {
 }
 
 module.exports = {
+  fetchFirstGutenbergPost,
   fetchAllGutenbergPosts,
   fetchDynamicBlockNames,
   renderDynamicBlock,
