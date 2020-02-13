@@ -1,0 +1,59 @@
+{
+  "name": "gatsby-wordpress-gutenberg/wp-gatsby-gutenberg",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-or-later",
+  "description": "Enhance your gatsby project with gutenberg.",
+  "homepage": "https://github.com/pristas-peter/gatsby-wordpress-gutenberg",
+  "keywords": [
+    "gutenberg",
+    "wordpress",
+    "editor",
+    "wp",
+    "react",
+    "javascript",
+    "gatsby"
+  ],
+  "archive": {
+    "exclude": [
+      "*",
+      "!plugin.php",
+      "!lib/",
+      "!vendor/"
+    ]
+  },
+  "support": {
+    "issues": "https://github.com/pristas-peter/gatsby-wordpress-gutenberg"
+  },
+  "require": {
+    "composer/installers": "~1.0",
+    "wp-graphql/wp-graphql": "^0.6.0"
+  },
+  "scripts": {
+    "format": "phpcbf --standard=phpcs.xml.dist --report-summary --report-source",
+    "lint": "phpcs --standard=phpcs.xml.dist"
+  },
+  "config": {
+    "optimize-autoloader": true
+  },
+  "autoload": {
+    "psr-4": {
+      "GatsbyWordpressGutenberg\\": "lib/"
+    },
+    "classmap": [
+      "lib/"
+    ]
+  },
+  "authors": [
+    {
+      "name": "Peter Pristas",
+      "email": "pristas.peter@gmail.com",
+      "homepage": "https://github.com/pristas-peter",
+      "role": "Developer"
+    },
+    {
+      "name": "Henrik Wirth",
+      "homepage": "https://github.com/henrikwirth",
+      "role": "Developer"
+    }
+  ]
+}
