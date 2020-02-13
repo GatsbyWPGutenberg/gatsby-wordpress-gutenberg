@@ -20,12 +20,42 @@ module.exports = {
       },
     },
     {
-      resolve: `gatsby-source-graphql`,
+      resolve: `gatsby-source-wordpress-experimental`,
       options: {
         url: `http://localhost:8020/graphql`,
-        typeName: `WP`,
-        // Field under which the remote schema will be accessible. You'll use this in your Gatsby query
-        fieldName: `wp`,
+        verbose: true,
+        // for wp-graphql-gutenberg, attributes currently breaks due
+        // to the origin schema. It works if we exclude attributes
+        excludeFields: [`attributes`],
+        schema: {
+          queryDepth: 15,
+          typePrefix: `Wp`,
+        },
+        develop: {
+          nodeUpdateInterval: 5000,
+        },
+        debug: {
+          graphql: {
+            showQueryOnError: false,
+            showQueryVarsOnError: false,
+            copyQueryOnError: false,
+            panicOnError: false,
+          },
+        },
+        // type:
+        //   // Lets just pull 50 posts in development to make it easy on ourselves.
+        //   // and we don't actually need more than 5000 in production!
+        //   process.env.NODE_ENV === `development`
+        //     ? {
+        //         Post: {
+        //           limit: 50,
+        //         },
+        //       }
+        //     : {
+        //         Post: {
+        //           limit: 5000,
+        //         },
+        //       },
       },
     },
     // this (optional) plugin enables Progressive Web App + Offline functionality

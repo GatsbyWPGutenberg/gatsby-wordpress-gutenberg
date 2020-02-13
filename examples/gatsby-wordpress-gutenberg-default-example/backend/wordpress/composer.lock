@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b640d10f36b87426c2cf4ce3a561c62c",
+    "content-hash": "4cd66093440066f6f6628e60f3c47498",
     "packages": [
         {
             "name": "composer/installers",
-            "version": "v1.7.0",
+            "version": "v1.8.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/composer/installers.git",
-                "reference": "141b272484481432cda342727a427dc1e206bfa0"
+                "reference": "7d610d50aae61ae7ed6675e58efeabdf279bb5e3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/composer/installers/zipball/141b272484481432cda342727a427dc1e206bfa0",
-                "reference": "141b272484481432cda342727a427dc1e206bfa0",
+                "url": "https://api.github.com/repos/composer/installers/zipball/7d610d50aae61ae7ed6675e58efeabdf279bb5e3",
+                "reference": "7d610d50aae61ae7ed6675e58efeabdf279bb5e3",
                 "shasum": ""
             },
             "require": {
@@ -65,6 +65,7 @@
                 "Kanboard",
                 "Lan Management System",
                 "MODX Evo",
+                "MantisBT",
                 "Mautic",
                 "Maya",
                 "OXID",
@@ -119,6 +120,7 @@
                 "shopware",
                 "silverstripe",
                 "sydes",
+                "sylius",
                 "symfony",
                 "typo3",
                 "wordpress",
@@ -126,15 +128,15 @@
                 "zend",
                 "zikula"
             ],
-            "time": "2019-08-12T15:00:31+00:00"
+            "time": "2020-02-07T10:39:20+00:00"
         },
         {
-            "name": "gatsby-wordpress-gutenberg/gatsby-wordpress-gutenberg",
-            "version": "dev-feature/16-core-theme",
+            "name": "gatsby-wordpress-gutenberg/wp-gatsby-gutenberg",
+            "version": "dev-master",
             "dist": {
                 "type": "path",
-                "url": "/gatsby-wordpress-gutenberg",
-                "reference": "8051fd186154e51809f6339519702406afcb8d09"
+                "url": "/plugins/wp-gatsby-gutenberg",
+                "reference": "4583fced4fa900530b884dfc1b4d01b88070ea47"
             },
             "archive": {
                 "exclude": [
@@ -195,6 +197,53 @@
             "support": {
                 "issues": "https://github.com/pristas-peter/gatsby-wordpress-gutenberg"
             },
+            "transport-options": {
+                "symlink": true
+            }
+        },
+        {
+            "name": "gatsbyjs/wp-gatsby",
+            "version": "dev-master",
+            "dist": {
+                "type": "path",
+                "url": "/plugins/wp-gatsby",
+                "reference": "f0c3fbe5b2c7c9a2dd5af0276479035df88d8147"
+            },
+            "type": "wordpress-plugin",
+            "autoload": {
+                "psr-4": {
+                    "WP_Gatsby\\": "src/"
+                },
+                "classmap": [
+                    "src/"
+                ]
+            },
+            "scripts": {
+                "phpcs-i": [
+                    "php ./vendor/bin/phpcs -i"
+                ],
+                "check-cs": [
+                    "php ./vendor/bin/phpcs src"
+                ],
+                "fix-cs": [
+                    "php ./vendor/bin/phpcbf src"
+                ]
+            },
+            "license": [
+                "GPL-3.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "GatsbyJS"
+                },
+                {
+                    "name": "Jason Bahl"
+                },
+                {
+                    "name": "Tyler Barnes"
+                }
+            ],
+            "description": "Optimize your WordPress site as a source for Gatsby site(s)",
             "transport-options": {
                 "symlink": true
             }
@@ -306,16 +355,16 @@
         },
         {
             "name": "wp-graphql/wp-graphql",
-            "version": "v0.6.0",
+            "version": "v0.6.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/wp-graphql/wp-graphql.git",
-                "reference": "61640c1ea820e1e20abd4dc3118ee41aec0f13d0"
+                "reference": "db95b48a8c77978f6ae5810a0788c95c8e2f0be5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/wp-graphql/wp-graphql/zipball/61640c1ea820e1e20abd4dc3118ee41aec0f13d0",
-                "reference": "61640c1ea820e1e20abd4dc3118ee41aec0f13d0",
+                "url": "https://api.github.com/repos/wp-graphql/wp-graphql/zipball/db95b48a8c77978f6ae5810a0788c95c8e2f0be5",
+                "reference": "db95b48a8c77978f6ae5810a0788c95c8e2f0be5",
                 "shasum": ""
             },
             "require": {
@@ -360,14 +409,15 @@
                 }
             ],
             "description": "GraphQL API for WordPress",
-            "time": "2020-01-21T22:28:16+00:00"
+            "time": "2020-01-24T20:31:50+00:00"
         }
     ],
     "packages-dev": [],
     "aliases": [],
     "minimum-stability": "dev",
     "stability-flags": {
-        "gatsby-wordpress-gutenberg/gatsby-wordpress-gutenberg": 20,
+        "gatsbyjs/wp-gatsby": 20,
+        "gatsby-wordpress-gutenberg/wp-gatsby-gutenberg": 20,
         "wp-api/basic-auth": 20
     },
     "prefer-stable": true,

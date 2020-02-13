@@ -10,10 +10,16 @@ const BLOCKS_PATH = path.join(`src`, PLUGIN_NAME, `blocks`)
 const PREVIEW_BLOCKS_PATH = path.join(`src`, PLUGIN_NAME, `preview-blocks`)
 const PAGES_PATH = path.join(`src`, PLUGIN_NAME, `pages`)
 
+let watcher
+
 const permalinkToTypename = ({ permalink }) => pascalize(new URL(permalink).pathname.replace(/(^\/|\/$)/g, ``))
 
 const fetchAllGutenbergPost = async ({ graphql }) => {
   const { data, errors } = await graphql(`
+    fragment GutenbergPostBlock on GutenbergBlock {
+      name
+      id
+    }
     query {
       allGutenbergPost {
         edges {
@@ -23,32 +29,20 @@ const fetchAllGutenbergPost = async ({ graphql }) => {
             gutenbergContent {
               blocks {
                 __typename
-                ... on GutenbergBlock {
-                  name
-                  id
-                }
+                ...GutenbergPostBlock
                 innerBlocks {
                   __typename
-                  ... on GutenbergBlock {
-                    name
-                    id
-                  }
+                  ...GutenbergPostBlock
                 }
               }
             }
             gutenbergPreviewContent {
               blocks {
                 __typename
-                ... on GutenbergBlock {
-                  name
-                  id
-                }
+                ...GutenbergPostBlock
                 innerBlocks {
                   __typename
-                  ... on GutenbergBlock {
-                    name
-                    id
-                  }
+                  ...GutenbergPostBlock
                 }
               }
             }
@@ -69,14 +63,15 @@ const fetchInnerBlocks = async ({ graphql, block: { __typename, id } }) => {
   const field = __typename.charAt(0).toLowerCase() + __typename.slice(1)
 
   const { data, errors } = await graphql(`
+    fragment GutenbergPostBlock on GutenbergBlock {
+      name
+      id
+    }
     query {
       ${field}(id: {eq: "${id}"}) {
         innerBlocks {
           __typename
-          ... on GutenbergBlock {
-            name
-            id
-          }
+          ...GutenbergPostBlock
         }
       }
     }
@@ -351,7 +346,7 @@ const resolveBlockFragment = async ({
 
     return fragment
   }
-  // idk if this should be enforced
+  // should this be enforced ???
   //  else {
   //   reporter.warn(`Fragment definition in ${componentPath} not found`)
   // }
@@ -383,7 +378,6 @@ const resolveBlockFragment = async ({
 // - the page generation can be turned off completely, user can than import src/gatsby-theme-wordpress-gutenberg/blocks/by-id/[post-id].js
 //   or src/gatsby-theme-wordpress-gutenberg/blocks/by-permalink/[permalink-converted-to-dashes].js file and
 //   use the fragment GutenbergBlocks[post-id] or GutenbergBlocks[permalink-converted-to-dashes] in the page query manually
-
 const processContent = async (options, pluginOptions) => {
   const { graphql, actions, store } = options
 
@@ -568,8 +562,6 @@ const processContent = async (options, pluginOptions) => {
   }
 }
 
-let watcher
-
 exports.onPreBootstrap = async options => {
   const { store } = options
 
@@ -578,7 +570,11 @@ exports.onPreBootstrap = async options => {
   } = store.getState()
 
   // perform cleanup
-  await Promise.all([fs.emptyDir(path.join(directory, BLOCKS_PATH)), fs.emptyDir(path.join(directory, PAGES_PATH))])
+  await Promise.all([
+    fs.emptyDir(path.join(directory, BLOCKS_PATH)),
+    fs.emptyDir(path.join(directory, PREVIEW_BLOCKS_PATH)),
+    fs.emptyDir(path.join(directory, PAGES_PATH)),
+  ])
 }
 
 exports.createPages = async (options, pluginOptions) => {
@@ -615,14 +611,14 @@ exports.createPagesStatefully = (options, pluginOptions) => {
     }
 
     watcher = chokidar
-      .watch([
+      .watch(
         store.getState().flattenedPlugins.map(flattenedPlugin => {
           const directoryPath = flattenedPlugin.pluginFilepath
           return `${directoryPath}/${
             flattenedPlugin.name === PLUGIN_NAME ? `src/` : `src/gatsby-theme-wordpress-gutenberg/`
           }{components,templates}/**/*.{${exts}}`
-        }),
-      ])
+        })
+      )
       .on(`all`, cb)
   }
 }
