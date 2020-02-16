@@ -35,7 +35,7 @@ class TypeRegistrator
   protected function resolve_graphql_type($model)
   {
     $type_name = apply_filters(
-      'gwg_post_graphql_type',
+      'wgg_post_graphql_type',
       get_post_type_object($model->post_type)->graphql_single_name,
       $model->post_type,
       $model
@@ -61,7 +61,7 @@ class TypeRegistrator
   public function get_gutenberg_graphql_types()
   {
     return apply_filters(
-      'gwg_gutenberg_graphql_types',
+      'wgg_gutenberg_graphql_types',
       array_map(function ($post_type) {
         return get_post_type_object($post_type)->graphql_single_name;
       }, $this->get_gutenberg_post_types_in_graphql())
@@ -70,7 +70,7 @@ class TypeRegistrator
 
   public function get_post_resolver($post_id)
   {
-    return apply_filters('gwg_post_resolver', [\WPGraphQL\Data\DataSource::class, 'resolve_post_object'], $post_id);
+    return apply_filters('wgg_post_resolver', [\WPGraphQL\Data\DataSource::class, 'resolve_post_object'], $post_id);
   }
 
   public function __construct()
@@ -101,7 +101,11 @@ class TypeRegistrator
         'gutenbergPostContent' => [
           'type' => 'String',
           'resolve' => function ($model) {
-            return get_post($model->ID)->post_content;
+            if (current_user_can('edit_post', $model->ID)) {
+              return get_post($model->ID)->post_content;
+            }
+
+            return null;
           }
         ],
         'gutenbergPostId' => [
@@ -113,7 +117,11 @@ class TypeRegistrator
         'gutenbergPermalink' => [
           'type' => 'String',
           'resolve' => function ($model) {
-            return get_permalink($model->ID);
+            if (current_user_can('edit_post', $model->ID)) {
+              return get_permalink($model->ID);
+            }
+
+            return null;
           }
         ]
       ]
