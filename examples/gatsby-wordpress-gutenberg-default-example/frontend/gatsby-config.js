@@ -17,6 +17,9 @@ module.exports = {
         uri: `http://localhost:8020`,
         user: `admin`,
         password: `admin`,
+        linkOptions: {
+          uri: `http://admin:admin@localhost:8020/graphql`,
+        },
       },
     },
     {
