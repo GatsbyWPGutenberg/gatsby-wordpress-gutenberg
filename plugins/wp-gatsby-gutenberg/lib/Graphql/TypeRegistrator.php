@@ -101,11 +101,7 @@ class TypeRegistrator
         'gutenbergPostContent' => [
           'type' => 'String',
           'resolve' => function ($model) {
-            if (current_user_can('edit_post', $model->ID)) {
-              return get_post($model->ID)->post_content;
-            }
-
-            return null;
+            return get_post($model->ID)->post_content;
           }
         ],
         'gutenbergPostId' => [
@@ -117,11 +113,7 @@ class TypeRegistrator
         'gutenbergPermalink' => [
           'type' => 'String',
           'resolve' => function ($model) {
-            if (current_user_can('edit_post', $model->ID)) {
-              return get_permalink($model->ID);
-            }
-
-            return null;
+            return get_permalink($model->ID);
           }
         ]
       ]
@@ -166,7 +158,7 @@ class TypeRegistrator
           $gutenberg_post_type_interface_config
         );
         register_graphql_field('RootQuery', WP_GATSBY_GUTENBERG_GRAPHQL_GUTENBERG_DYNAMIC_BLOCK_NAMES_FIELD_NAME, [
-          'type' => ['non_null' => ['list_of' => ['non_null' => 'String']]],
+          'type' => ['list_of' => ['non_null' => 'String']],
           'resolve' => function () {
             return get_dynamic_block_names();
           }
