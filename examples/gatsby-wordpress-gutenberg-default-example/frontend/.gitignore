@@ -70,3 +70,4 @@ yarn-error.log
 
 src/gatsby-theme-wordpress-gutenberg/pages/
 src/gatsby-theme-wordpress-gutenberg/blocks/
+src/gatsby-theme-wordpress-gutenberg/preview-blocks/
