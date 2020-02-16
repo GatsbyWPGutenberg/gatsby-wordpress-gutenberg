@@ -136,13 +136,7 @@ const closeGutenberg = async ({ reporter }) => {
 }
 
 exports.onPreBootstrap = async (options, pluginOptions) => {
-  const { linkOptions, user, password, uri } = pluginOptions
-
-  // setup apollo client - support basic http auth out of the box since we require user/password
-  const defaultUri = new URL(uri)
-  defaultUri.username = user
-  defaultUri.password = password
-  defaultUri.pathname = `/graphql`
+  const { linkOptions } = pluginOptions
 
   client = new ApolloClient({
     link: ApolloLink.from([
@@ -160,7 +154,7 @@ exports.onPreBootstrap = async (options, pluginOptions) => {
       // }),
       new HttpLink({
         fetch,
-        uri: defaultUri.href,
+
         // allow user to overide link through plugin options
         ...linkOptions,
       }),
