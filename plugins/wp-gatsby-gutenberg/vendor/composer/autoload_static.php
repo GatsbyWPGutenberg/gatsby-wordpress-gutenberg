@@ -22,6 +22,7 @@ class ComposerStaticInit0cfb58398052e50dda3e9dded49931ac
 
     public static $classMap = array (
         'WpGatsbyGutenberg\\Graphql\\TypeRegistrator' => __DIR__ . '/../..' . '/lib/Graphql/TypeRegistrator.php',
+        'WpGatsbyGutenberg\\Model\\GutenbergPreview' => __DIR__ . '/../..' . '/lib/Model/GutenbergPreview.php',
         'WpGatsbyGutenberg\\WpGatsbyGutenberg' => __DIR__ . '/../..' . '/lib/init.php',
     );
 

@@ -7,5 +7,6 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'WpGatsbyGutenberg\\Graphql\\TypeRegistrator' => $baseDir . '/lib/Graphql/TypeRegistrator.php',
+    'WpGatsbyGutenberg\\Model\\GutenbergPreview' => $baseDir . '/lib/Model/GutenbergPreview.php',
     'WpGatsbyGutenberg\\WpGatsbyGutenberg' => $baseDir . '/lib/init.php',
 );

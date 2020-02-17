@@ -11,7 +11,7 @@
       "port": 9000,
       "pathMappings": {
         "/var/www/html": "${workspaceRoot}/examples/gatsby-wordpress-gutenberg-default-example/backend/wordpress",
-        "/gatsby-wordpress-gutenberg": "${workspaceRoot}"
+        "/plugins": "${workspaceRoot}/plugins"
       }
     }
   ]

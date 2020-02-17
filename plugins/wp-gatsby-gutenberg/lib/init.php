@@ -21,6 +21,7 @@ if (!class_exists('WpGatsbyGutenberg')) {
 
     public function setup()
     {
+      new \WpGatsbyGutenberg\Model\GutenbergPreview();
       new \WpGatsbyGutenberg\Graphql\TypeRegistrator();
 
       add_action('enqueue_block_editor_assets', function () {

@@ -12,38 +12,92 @@ const PAGES_PATH = path.join(`src`, PLUGIN_NAME, `pages`)
 
 let watcher
 
-const permalinkToTypename = ({ permalink }) => pascalize(new URL(permalink).pathname.replace(/(^\/|\/$)/g, ``))
+const fragments = {
+  GutenbergPostBlock: `
+  fragment GutenbergPostBlock on GutenbergBlock {
+    name
+    id
+  }
+`,
+}
 
-const fetchAllGutenbergPost = async ({ graphql }) => {
+const linkToTypename = ({ link }) => pascalize(new URL(link).pathname.replace(/(^\/|\/$)/g, ``))
+
+const fetchPostIds = async ({ graphql }) => {
   const { data, errors } = await graphql(`
-    fragment GutenbergPostBlock on GutenbergBlock {
-      name
-      id
-    }
     query {
-      allGutenbergPost {
+      allGutenbergContent {
         edges {
           node {
             postId
-            permalink
-            gutenbergContent {
-              blocks {
-                __typename
-                ...GutenbergPostBlock
-                innerBlocks {
-                  __typename
-                  ...GutenbergPostBlock
-                }
-              }
+          }
+        }
+      }
+    }
+  `)
+
+  if (errors) {
+    throw errors[0]
+  }
+
+  return Array.from(new Set(data.allGutenbergContent.edges.map(({ node }) => node.postId)))
+}
+
+const fetchLatest = async ({ graphql, postId, preview }) => {
+  //   const filters = [`postId: {eq: ${postId}}`]
+
+  //   if (!preview) {
+  //     filters.push(`isPreview: {eq: false}`, `link: {ne: null}`)
+  //   }
+
+  //   const query = `
+  // ${fragments.GutenbergPostBlock}
+  // query {
+  //   allGutenbergContent(sort: {fields: [modifiedTime], order: [DESC]}, filter: {${filters.join(`, `)}}) {
+  //     edges {
+  //       node {
+  //         id
+  //         postId
+  //         link
+  //         modifiedTime
+  //         isPreview
+  //         blocks {
+  //           __typename
+  //           ...GutenbergPostBlock
+  //           innerBlocks {
+  //             __typename
+  //             ...GutenbergPostBlock
+  //           }
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
+  // `
+
+  // return (data.allGutenbergContent.edges.length && data.allGutenbergContent.edges[0].node) || null
+
+  const { data, errors } = await graphql(`
+    ${fragments.GutenbergPostBlock}
+    query {
+      allGutenbergContent(sort: { fields: [postId, modifiedTime], order: [ASC, DESC] }) {
+        edges {
+          node {
+            id
+            postId
+            link
+            link
+            parent {
+              type: __typename
             }
-            gutenbergPreviewContent {
-              blocks {
+            modifiedTime
+            isPreview
+            blocks {
+              __typename
+              ...GutenbergPostBlock
+              innerBlocks {
                 __typename
                 ...GutenbergPostBlock
-                innerBlocks {
-                  __typename
-                  ...GutenbergPostBlock
-                }
               }
             }
           }
@@ -56,17 +110,26 @@ const fetchAllGutenbergPost = async ({ graphql }) => {
     throw errors[0]
   }
 
-  return data
+  for (const edge of data.allGutenbergContent.edges) {
+    const { node } = edge
+
+    if (node.postId === postId) {
+      if (preview) {
+        return node
+      } else if (node.link && !node.isPreview) {
+        return node
+      }
+    }
+  }
+
+  return null
 }
 
 const fetchInnerBlocks = async ({ graphql, block: { __typename, id } }) => {
   const field = __typename.charAt(0).toLowerCase() + __typename.slice(1)
 
   const { data, errors } = await graphql(`
-    fragment GutenbergPostBlock on GutenbergBlock {
-      name
-      id
-    }
+    ${fragments.GutenbergPostBlock}
     query {
       ${field}(id: {eq: "${id}"}) {
         innerBlocks {
@@ -144,81 +207,41 @@ export default Blocks
 
 // creates source code for page
 const createPageComponentSource = ({
+  preview,
+  id,
+  fragmentName,
   postId,
-  blocksFragmentName,
-  blocksComponentPath,
-  previewBlocksFragmentName,
-  previewBlocksComponentPath,
+  componentPath,
   templateComponentPath,
   templateComponentFragmentName,
-}) => {
-  const hasPreview = previewBlocksComponentPath && previewBlocksFragmentName
-
-  return `/* eslint-disable */
+}) => `/* eslint-disable */
 /* Warning: this file is autogerated, any changes would be lost */
 import React from 'react'
 import { graphql } from 'gatsby'
-import Blocks from '${blocksComponentPath}'
-${hasPreview ? `import PreviewBlocks from '${previewBlocksComponentPath}'` : ``}
+import Blocks from '${componentPath}'
 import PageTemplate from '${templateComponentPath}'
 
 export const pageQuery = graphql\`
-  query GetGutenbergContent${postId}($postId: Int!) {
-    gutenbergPost(postId: {eq: $postId}) {
-      gutenbergContent {
-        blocks {
-          ...${blocksFragmentName}
-        }
-      }
-      ${
-        hasPreview
-          ? `gutenbergPreviewContent {
-        blocks {
-          ...${previewBlocksFragmentName}
-        }
-      }`
-          : ``
+  query GetGutenbergContent${preview ? `Preview` : ``}${postId}($postId: Int!) {
+    gutenbergContent(id: {eq: "${id}"}, postId: {eq: $postId}) {
+      blocks {
+        ...${fragmentName}
       }
     }
     
     ${templateComponentFragmentName ? `...${templateComponentFragmentName}` : ``}
   }\`
-${
-  hasPreview
-    ? `
-const Page = props => {
-  let children = <Blocks blocks={props.data.gutenbergPost.gutenbergContent.blocks} />
 
-  if (typeof window !== undefined) {
-    const params = new URLSearchParams(window.location.search)
-
-    if (params.get('preview') === 'true' && props.data.gutenbergPost.gutenbergPreviewContent) {
-      children = <PreviewBlocks blocks={props.data.gutenbergPost.gutenbergPreviewContent.blocks} />
-    }
-  }
-
-  return (
-    <PageTemplate {...props}>
-      {children}
-    </PageTemplate>
-  )
-
-}
-  `
-    : `
 const Page = props =>
   <PageTemplate {...props}>
-    <Blocks blocks={props.data.gutenbergPost.gutenbergContent.blocks} />
+    <Blocks blocks={props.data.gutenbergContent.blocks} />
   </PageTemplate>
-`
-}
 
 export default Page
 `
-}
 
-const permalinkToFilename = ({ permalink }) => {
-  const pathname = new URL(permalink).pathname
+const linkToFilename = ({ link }) => {
+  const pathname = new URL(link).pathname
   if (pathname === `/`) {
     return `index`
   }
@@ -299,12 +322,13 @@ const resolveComponentPath = async ({ store, componentPath }) => {
 // uses same alghoritm as component shadowing so the component which
 // is closest to the user's project in the template hierarchy wins
 // more info on templates further down in comments
-const resolveTemplateComponentPath = async ({ store, postId, permalink }) =>
+const resolveTemplateComponentPath = async ({ store, postId, link }) =>
   (await resolveComponentPath({ store, componentPath: path.join(`templates`, `by-id`, `${postId}`) })) ||
-  (await resolveComponentPath({
-    store,
-    componentPath: path.join(`templates`, `by-permalink`, permalinkToFilename({ permalink })),
-  })) ||
+  (link &&
+    (await resolveComponentPath({
+      store,
+      componentPath: path.join(`templates`, `by-link`, linkToFilename({ link })),
+    }))) ||
   (await resolveComponentPath({
     store,
     componentPath: path.join(`templates`, `index`),
@@ -346,11 +370,8 @@ const resolveBlockFragment = async ({
 
     return fragment
   }
-  // should this be enforced ???
-  //  else {
-  //   reporter.warn(`Fragment definition in ${componentPath} not found`)
-  // }
-  return null
+
+  throw new Error(`Fragment definition in ${componentPath} not found`)
 }
 
 // processess all gutenberg content nodes and generates source files
@@ -369,24 +390,24 @@ const resolveBlockFragment = async ({
 //    (Insipired by: https://wphierarchy.com/)
 //    - index.js - override shipped main template for all posts
 //    - by-id/[wordpress-post-id].js - override template for post with id
-//    - by-permalink/[wordpress-post-permalink].js - override template for post with permalink (replace slashes with dashes) eq: blog/hello-world -> blog-hello-world.js
+//    - by-link/[wordpress-post-link].js - override template for post with link (replace slashes with dashes) eq: blog/hello-world -> blog-hello-world.js
 //    TODO: add more override options (eq by post type) - use wp-graphql's Content interface / gatsby-source-wordpress
 // - the created template component can contain fragment definition on root Query type which will be
 //   automatically imported into the generated page query (useful to query post's YOAST seo/acf fields or all other gatsby's content)
 //   the user can use graphql $id variable in the graphql string which is the wordpress id of the post (Int!)
 // - template components gets the <Blocks /> component as its children prop
 // - the page generation can be turned off completely, user can than import src/gatsby-theme-wordpress-gutenberg/blocks/by-id/[post-id].js
-//   or src/gatsby-theme-wordpress-gutenberg/blocks/by-permalink/[permalink-converted-to-dashes].js file and
-//   use the fragment GutenbergBlocks[post-id] or GutenbergBlocks[permalink-converted-to-dashes] in the page query manually
+//   or src/gatsby-theme-wordpress-gutenberg/blocks/by-link/[link-converted-to-dashes].js file and
+//   use the fragment GutenbergBlocks[post-id] or GutenbergBlocks[link-converted-to-dashes] in the page query manually
 const processContent = async (options, pluginOptions) => {
   const { graphql, actions, store } = options
 
   const { program } = store.getState()
   const { createPage } = actions
 
-  const { allGutenbergPost } = await fetchAllGutenbergPost({ graphql })
+  const postIds = await fetchPostIds({ graphql })
 
-  if (allGutenbergPost.edges.length) {
+  if (postIds.length) {
     const componentPathByName = new Map()
     const fragmentNameByName = new Map()
 
@@ -409,7 +430,6 @@ const processContent = async (options, pluginOptions) => {
 
         if (!fragmentNameByName.has(name)) {
           const fragment = await resolveBlockFragment({ componentPath: componentPathByName.get(name) })
-
           fragmentNameByName.set(name, fragment.name.value)
         }
       }
@@ -417,6 +437,7 @@ const processContent = async (options, pluginOptions) => {
       const visitInnerBlock = async ({ innerBlock, currentInnerBlocksLevel }) => {
         innerBlocksLevel = Math.max(currentInnerBlocksLevel, innerBlocksLevel)
 
+        await visitBlock({ block: innerBlock })
         const { innerBlocks } = await fetchInnerBlocks({ graphql, block: innerBlock })
 
         await Promise.all(
@@ -441,47 +462,42 @@ const processContent = async (options, pluginOptions) => {
       return { blockTypenameByName, innerBlocksLevel }
     }
 
-    await Promise.all(
-      allGutenbergPost.edges.map(async ({ node }) => {
-        const { postId, permalink, gutenbergContent, gutenbergPreviewContent } = node
+    const processNode = async ({ node, preview }) => {
+      const { postId, blocks, link, id } = node
 
-        const createBlocksComponent = async ({ blocks, isPreview }) => {
-          const { innerBlocksLevel, blockTypenameByName } = await visitBlocks({ blocks })
+      const createBlocksComponent = async () => {
+        const { innerBlocksLevel, blockTypenameByName } = await visitBlocks({ blocks })
 
-          const blockFragmentNames = Array.from(blockTypenameByName.keys()).map(name => fragmentNameByName.get(name))
-          const fragmentName = `${!isPreview ? `GutenbergBlocks` : `GutenbergPreviewBlocks`}${postId}`
+        const blockFragmentNames = Array.from(blockTypenameByName.keys()).map(name => fragmentNameByName.get(name))
+        const fragmentName = `${!preview ? `GutenbergBlocks` : `GutenbergPreviewBlocks`}${postId}`
 
-          const componentPath = path.join(
-            program.directory,
-            !isPreview ? BLOCKS_PATH : PREVIEW_BLOCKS_PATH,
-            `by-id`,
-            `${postId}.js`
-          )
+        const componentPath = path.join(
+          program.directory,
+          !preview ? BLOCKS_PATH : PREVIEW_BLOCKS_PATH,
+          `by-id`,
+          `${postId}.js`
+        )
 
-          await writeFile({
-            filePath: componentPath,
-            data: createBlocksComponentSource({
-              sdl: createFragment({
-                name: fragmentName,
-                blockFragmentNames,
-                innerBlocksLevel,
-              }),
-              blockTypenameByName,
-              componentPathByName,
+        await writeFile({
+          filePath: componentPath,
+          data: createBlocksComponentSource({
+            sdl: createFragment({
+              name: fragmentName,
+              blockFragmentNames,
+              innerBlocksLevel,
             }),
-          })
+            blockTypenameByName,
+            componentPathByName,
+          }),
+        })
 
+        if (link && !preview) {
           await writeFile({
-            filePath: path.join(
-              program.directory,
-              !isPreview ? BLOCKS_PATH : PREVIEW_BLOCKS_PATH,
-              `by-permalink`,
-              `${permalinkToFilename({ permalink })}.js`
-            ),
+            filePath: path.join(program.directory, BLOCKS_PATH, `by-link`, `${linkToFilename({ link })}.js`),
             data: createBlocksComponentSource({
               sdl: createFragment({
-                name: `${!isPreview ? `GutenbergBlocks` : `GutenbergPreviewBlocks`}${permalinkToTypename({
-                  permalink,
+                name: `GutenbergBlocks${linkToTypename({
+                  link,
                 })}`,
                 blockFragmentNames,
                 innerBlocksLevel,
@@ -490,73 +506,76 @@ const processContent = async (options, pluginOptions) => {
               componentPathByName,
             }),
           })
-
-          return { fragmentName, componentPath }
         }
 
-        const { fragmentName: blocksFragmentName, componentPath: blocksComponentPath } = await createBlocksComponent({
-          blocks: gutenbergContent.blocks,
-        })
+        return { fragmentName, componentPath }
+      }
 
-        let previewBlocksFragmentName = null
-        let previewBlocksComponentPath = null
+      const templateComponentPath = await resolveTemplateComponentPath({
+        ...options,
+        postId,
+        link,
+      })
 
-        if (gutenbergPreviewContent) {
-          const result = await createBlocksComponent({
-            blocks: gutenbergPreviewContent.blocks,
-            isPreview: true,
-          })
+      const document = await extractGraphql({ componentPath: templateComponentPath })
 
-          previewBlocksComponentPath = result.componentPath
-          previewBlocksFragmentName = result.fragmentName
-        }
+      let templateComponentFragment = null
 
-        const templateComponentPath = await resolveTemplateComponentPath({
-          ...options,
-          postId,
-          permalink,
-        })
-
-        const document = await extractGraphql({ componentPath: templateComponentPath })
-
-        let templateComponentFragment = null
-
-        if (document) {
-          document.definitions.forEach(d => {
-            if (d.kind === Kind.FRAGMENT_DEFINITION) {
-              if (templateComponentFragment || d.typeCondition.name.value !== `Query`) {
-                throw new Error(
-                  `GraphQL Error: Template \`${templateComponentFragment}\` must contain only one fragment definition on Query type.`
-                )
-              }
-
-              templateComponentFragment = d
+      if (document) {
+        document.definitions.forEach(d => {
+          if (d.kind === Kind.FRAGMENT_DEFINITION) {
+            if (templateComponentFragment || d.typeCondition.name.value !== `Query`) {
+              throw new Error(
+                `GraphQL Error: Template \`${templateComponentFragment}\` must contain only one fragment definition on Query type.`
+              )
             }
-          })
+
+            templateComponentFragment = d
+          }
+        })
+      }
+
+      const { fragmentName, componentPath } = await createBlocksComponent({
+        blocks,
+      })
+
+      const pageComponentPath = path.join(program.directory, PAGES_PATH, preview ? `___gutenberg` : ``, `${postId}.js`)
+
+      await writeFile({
+        filePath: pageComponentPath,
+        data: createPageComponentSource({
+          postId,
+          id,
+          preview,
+          fragmentName,
+          componentPath,
+          templateComponentPath,
+          templateComponentFragmentName: templateComponentFragment && templateComponentFragment.name.value,
+        }),
+      })
+
+      await createPage({
+        component: pageComponentPath,
+        path: preview ? `/___gutenberg/${postId}` : new URL(link).pathname,
+        context: {
+          postId,
+        },
+      })
+    }
+
+    await Promise.all(
+      postIds.map(async postId => {
+        const node = await fetchLatest({ graphql, postId })
+
+        if (node) {
+          await processNode({ node })
         }
 
-        const pageComponentPath = path.join(program.directory, PAGES_PATH, `${postId}.js`)
+        const previewNode = await fetchLatest({ graphql, postId, preview: true })
 
-        await writeFile({
-          filePath: pageComponentPath,
-          data: createPageComponentSource({
-            postId,
-            blocksFragmentName,
-            blocksComponentPath,
-            previewBlocksFragmentName,
-            previewBlocksComponentPath,
-            templateComponentPath,
-            templateComponentFragmentName: templateComponentFragment && templateComponentFragment.name.value,
-          }),
-        })
-
-        await createPage({
-          component: pageComponentPath,
-          path: new URL(permalink).pathname,
-          context: {
-            postId,
-          },
-        })
+        if (previewNode) {
+          await processNode({ node: previewNode, preview: true })
+        }
       })
     )
   }

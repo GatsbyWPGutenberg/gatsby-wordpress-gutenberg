@@ -1,32 +1,33 @@
 import { getSaveContent } from "@wordpress/blocks"
 import { debounce } from "lodash"
-import { ApolloClient } from "apollo-client"
-import { HttpLink } from "apollo-link-http"
-import { ApolloLink } from "apollo-link"
-import { InMemoryCache } from "apollo-cache-inmemory"
-import gql from "graphql-tag"
+// import { ApolloClient } from "apollo-client"
+// import { HttpLink } from "apollo-link-http"
+// import { ApolloLink } from "apollo-link"
+// import { InMemoryCache } from "apollo-cache-inmemory"
+// import gql from "graphql-tag"
+import apiFetch from "@wordpress/api-fetch"
 
-export const createClient = ({ previewUrl }) => {
-  const url = new URL(previewUrl)
+// export const createClient = ({ previewUrl }) => {
+//   const url = new URL(previewUrl)
 
-  url.pathname += `___graphql`
+//   url.pathname += `___graphql`
 
-  return new ApolloClient({
-    link: ApolloLink.from([
-      new HttpLink({
-        uri: url.href,
-      }),
-    ]),
-    // disables all caching whatsoever
-    defaultOptions: {
-      query: {
-        fetchPolicy: `network-only`,
-        errorPolicy: `all`,
-      },
-    },
-    cache: new InMemoryCache(),
-  })
-}
+//   return new ApolloClient({
+//     link: ApolloLink.from([
+//       new HttpLink({
+//         uri: url.href,
+//       }),
+//     ]),
+//     // disables all caching whatsoever
+//     defaultOptions: {
+//       query: {
+//         fetchPolicy: `network-only`,
+//         errorPolicy: `all`,
+//       },
+//     },
+//     cache: new InMemoryCache(),
+//   })
+// }
 
 const visitBlocks = (blocks, visitor) => {
   blocks.forEach(block => {
@@ -56,14 +57,22 @@ export const sendPreview = debounce(({ client, state }) => {
     })
   })
 
-  client.query({
-    query: gql`
-      query SourceWordpressGutenbergPreview($data: String!) {
-        sourceWordpressGutenbergPreview(data: $data)
-      }
-    `,
-    variables: {
-      data: JSON.stringify(data),
-    },
+  apiFetch({
+    path: `/gatsby-gutenberg/v1/previews/batch`,
+    method: `POST`,
+    data: { batch: data },
   })
+    .then(console.log)
+    .catch(console.error)
+
+  // client.query({
+  //   query: gql`
+  //     query SourceWordpressGutenbergPreview($data: String!) {
+  //       sourceWordpressGutenbergPreview(data: $data)
+  //     }
+  //   `,
+  //   variables: {
+  //     data: JSON.stringify(data),
+  //   },
+  // })
 }, 500)

@@ -26,7 +26,7 @@ module.exports = {
       resolve: `gatsby-source-wordpress-experimental`,
       options: {
         url: `http://admin:admin@localhost:8020/graphql`,
-        verbose: true,
+        verbose: false,
         // for wp-graphql-gutenberg, attributes currently breaks due
         // to the origin schema. It works if we exclude attributes
         excludeFields: [`attributes`],

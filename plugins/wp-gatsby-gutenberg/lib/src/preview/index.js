@@ -9,7 +9,10 @@ import { addFilter } from "@wordpress/hooks"
 // import { PluginPostPublishPanel } from "@wordpress/edit-post"
 
 import store from "./store"
-import { sendPreview, createClient } from "./gatsby"
+import {
+  sendPreview,
+  // createClient,
+} from "./gatsby"
 
 if (window.wpGatsbyGutenberg) {
   const { previewUrl } = window.wpGatsbyGutenberg
@@ -17,10 +20,13 @@ if (window.wpGatsbyGutenberg) {
   if (previewUrl) {
     const CoreBlockContext = createContext(null)
 
-    const client = createClient({ previewUrl })
+    // const client = createClient({ previewUrl })
 
     store.subscribe(() => {
-      sendPreview({ client, state: store.getState() })
+      sendPreview({
+        // client,
+        state: store.getState(),
+      })
     })
 
     addFilter(`editor.BlockEdit`, `plugin-wp-gatsby-gutenberg-preview/BlockEdit`, Edit => {
@@ -31,13 +37,20 @@ if (window.wpGatsbyGutenberg) {
         const id = useSelect(select => {
           return select(`core/editor`).getCurrentPostId()
         })
+        const slug = useSelect(select => {
+          return select(`core/editor`).getEditedPostAttribute(`slug`)
+        })
+
+        const link = useSelect(select => {
+          return select(`core/editor`).getEditedPostAttribute(`link`)
+        })
 
         const { setBlocks } = useDispatch(`wp-gatsby-gutenberg/preview`)
         const coreBlockId = (coreBlock && coreBlock.attributes.ref && parseInt(coreBlock.attributes.ref, 10)) || null
 
         useEffect(() => {
           if (id) {
-            setBlocks({ id, blocks, coreBlockId })
+            setBlocks({ id, blocks, coreBlockId, slug, link })
           }
         }, [blocks, coreBlockId, id])
 

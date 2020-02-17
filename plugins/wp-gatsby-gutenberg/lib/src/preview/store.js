@@ -2,21 +2,26 @@ import { registerStore } from "@wordpress/data"
 
 export default registerStore(`wp-gatsby-gutenberg/preview`, {
   reducer(state = {}, action) {
-    switch (action.type) {
+    const { type, ...payload } = action
+
+    switch (type) {
       case `SET_BLOCKS`: {
+        const { blocks, coreBlockId, id, ...rest } = payload
+
         const stateById = state[action.id] || {
           blocks: [],
           blocksByCoreBlockId: {},
         }
 
-        if (action.coreBlockId) {
+        if (coreBlockId) {
           return {
             ...state,
-            [action.id]: {
+            [id]: {
               ...stateById,
+              ...rest,
               blocksByCoreBlockId: {
                 ...stateById.blocksByCoreBlockId,
-                [action.coreBlockId]: action.blocks,
+                [coreBlockId]: blocks,
               },
             },
           }
@@ -24,9 +29,10 @@ export default registerStore(`wp-gatsby-gutenberg/preview`, {
 
         return {
           ...state,
-          [action.id]: {
+          [id]: {
             ...stateById,
-            blocks: action.blocks,
+            ...rest,
+            blocks: blocks,
           },
         }
       }
@@ -36,12 +42,10 @@ export default registerStore(`wp-gatsby-gutenberg/preview`, {
   },
 
   actions: {
-    setBlocks({ id, blocks, coreBlockId }) {
+    setBlocks(payload) {
       return {
+        ...payload,
         type: `SET_BLOCKS`,
-        id,
-        blocks,
-        coreBlockId,
       }
     },
   },
