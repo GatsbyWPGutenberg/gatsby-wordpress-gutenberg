@@ -72,9 +72,9 @@ class GutenbergPreview
 
   public function __construct()
   {
-    apply_filters('wgg_gutenberg_post_types', function ($post_types) {
+    add_filter('wgg_gutenberg_post_types', function ($post_types) {
       return array_filter($post_types, function ($post_type) {
-        $post_type !== self::$post_type;
+        return $post_type !== self::$post_type;
       });
     });
 
@@ -116,6 +116,12 @@ class GutenbergPreview
             if (is_wp_error($result)) {
               return $result;
             }
+
+            return [
+              'batch' => [
+                // TODO: Add created/updated entitites to response
+              ]
+            ];
           }
         },
         'permission_callback' => function () {
