@@ -1,6 +1,6 @@
 module.exports = {
   siteMetadata: {
-    title: `GatsbyWPGutenberg documentation`,
+    title: `GatsbyWPGutenberg Docs`,
     description: `GatsbyWPGutenberg documentation.`,
   },
   plugins: [
@@ -13,14 +13,14 @@ module.exports = {
         // },
         algoliaApiKey: '4575706171508518950c4bf031729fc9',
         algoliaIndexName: 'wpgg',
-        siteName: "GatsbyWPGutenberg Documentation",
+        siteName: "GatsbyWPGutenberg Docs",
         menuTitle: "GatsbyWPGutenberg Menu",
-        subtitle: "GatsbyWPGutenberg Menu",
-        baseUrl: "https://wpgg-docs.netlify.com",
+        subtitle: "GatsbyWPGutenberg",
+        baseUrl: "https://gwpg-docs.netlify.com",
         root: __dirname,
         description: "GatsbyWPGutenberg documentation",
         githubRepo: "GatsbyWPGutenberg/gatsby-wordpress-gutenberg/docs",
-        logoLink: "https://docs.mobileui.dev",
+        logoLink: "https://gwpg-docs.netlify.com",
         navConfig: {
           "wpgg.netlify.com": {
             url: "https://gwpg.netlify.com",
