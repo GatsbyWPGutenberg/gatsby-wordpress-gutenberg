@@ -211,16 +211,6 @@ exports.createSchemaCustomization = async (options, pluginOptions) => {
   const { createTypes } = actions
 
   createTypes(
-    schema.buildObjectType({
-      name: `GutenbergPreview`,
-      fields: {
-        id: `ID!`,
-      },
-      interfaces: [`Node`],
-    })
-  )
-
-  createTypes(
     schema.buildInterfaceType({
       name: `GutenbergBlock`,
       fields: BLOCK_INTERFACE_FIELDS,
