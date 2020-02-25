@@ -48,5 +48,6 @@ module.exports = {
         },
       },
     },
+    'gatsby-plugin-preval',
   ],
 }
