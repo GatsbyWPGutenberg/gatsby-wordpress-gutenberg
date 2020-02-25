@@ -1,7 +1,7 @@
 <?php
 
 namespace WpGatsbyGutenberg\Graphql;
-use WPGraphQL\Types;
+use WPGraphQL\Utils;
 
 if (!defined('WP_GATSBY_GUTENBERG_GRAPHQL_POST_TYPE_INTERFACE_TYPE_NAME')) {
   define('WP_GATSBY_GUTENBERG_GRAPHQL_POST_TYPE_INTERFACE_TYPE_NAME', 'GutenbergPost');
@@ -144,7 +144,7 @@ class TypeRegistrator
         'gutenbergModifiedTime' => [
           'type' => ['non_null' => 'String'],
           'resolve' => function ($model) {
-            return Types::prepare_date_response(get_post($model->ID)->post_modified_gmt);
+            return Utils::prepare_date_response(get_post($model->ID)->post_modified_gmt);
           }
         ]
       ]

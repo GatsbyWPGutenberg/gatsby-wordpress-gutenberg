@@ -4,7 +4,7 @@ namespace WpGatsbyGutenberg\Model;
 
 use WP_Query;
 use WP_REST_Request;
-use WPGraphQL\Types;
+use WPGraphQL\Utils;
 
 if (!defined('WP_GATSBY_GUTENBERG_GUTENBERG_PREVIEW_POST_TYPE_NAME')) {
   define('WP_GATSBY_GUTENBERG_GUTENBERG_PREVIEW_POST_TYPE_NAME', 'wgg_preview');
@@ -179,7 +179,7 @@ class GutenbergPreview
       register_graphql_field(WP_GATSBY_GUTENBERG_GUTENBERG_PREVIEW_GRAPHQL_SINGLE_NAME, 'gutenbergModifiedTime', [
         'type' => 'String',
         'resolve' => function ($model) {
-          return Types::prepare_date_response(get_post($model->ID)->post_modified_gmt);
+          return Utils::prepare_date_response(get_post($model->ID)->post_modified_gmt);
         }
       ]);
     });
