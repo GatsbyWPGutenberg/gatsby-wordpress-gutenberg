@@ -1,0 +1,47 @@
+{
+  "name": "gatsby-wordpress-gutenberg-docs",
+  "private": true,
+  "description": "Gatsby WordPress Gutenberg Documentation",
+  "version": "0.1.0",
+  "contributors": [
+    {
+      "name": "Peter Pristas",
+      "email": "pristas.peter@gmail.com",
+      "url": "https://github.com/pristas-peter"
+    },
+    {
+      "name": "Henrik Wirth",
+      "url": "https://github.com/henrikwirth"
+    }
+  ],
+  "dependencies": {
+    "gatsby": "^2.19.21",
+    "gatsby-theme-apollo-docs": "4.0.7",
+    "react": "16.12.0",
+    "react-dom": "16.12.0"
+  },
+  "devDependencies": {
+    "prettier": "^1.19.1"
+  },
+  "keywords": [
+    "gatsby"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "prestart": "gatsby clean",
+    "build": "gatsby build",
+    "develop": "gatsby develop",
+    "format": "prettier --write \"**/*.{js,jsx,json,md}\"",
+    "start": "npm run develop",
+    "serve": "gatsby serve",
+    "clean": "gatsby clean",
+    "test": "echo \"Write tests! -> https://gatsby.dev/unit-testing\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gatsbyjs/gatsby-starter-default"
+  },
+  "bugs": {
+    "url": "https://github.com/gatsbyjs/gatsby/issues"
+  }
+}
