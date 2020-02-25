@@ -1,7 +1,7 @@
 module.exports = {
   siteMetadata: {
-    title: `WordPress Gutenberg Gatsby documentation`,
-    description: `WordPress Gutenberg Gatsby documentation.`,
+    title: `GatsbyWPGutenberg documentation`,
+    description: `GatsbyWPGutenberg documentation.`,
   },
   plugins: [
     // `gatsby-plugin-react-helmet`,
@@ -35,22 +35,22 @@ module.exports = {
         // },
         algoliaApiKey: '4575706171508518950c4bf031729fc9',
         algoliaIndexName: 'wpgg',
-        siteName: "GWG Documentation",
-        menuTitle: "GWG Menu",
-        subtitle: "GWG Menu",
+        siteName: "GatsbyWPGutenberg Documentation",
+        menuTitle: "GatsbyWPGutenberg Menu",
+        subtitle: "GatsbyWPGutenberg Menu",
         baseUrl: "https://wpgg-docs.netlify.com",
         root: __dirname,
-        description: "WordPress Gutenberg Gatsby documentation",
+        description: "GatsbyWPGutenberg documentation",
         githubRepo: "wpgg-framework/wordpress-gutenberg-gatsby",
         logoLink: "https://docs.mobileui.dev",
         navConfig: {
           "wpgg.netlify.com": {
-            url: "https://wpgg.netlify.com",
-            description: "The WPGG Framework page",
+            url: "https://gwpg.netlify.com",
+            description: "The GatsbyWPGutenberg page",
           },
           Github: {
-            url: "https://github.com/wpgg-framework",
-            description: "WPGG on Github",
+            url: "https://github.com/GatsbyWPGutenberg",
+            description: "GatsbyWPGutenberg on Github",
           },
         },
         footerNavConfig: {
