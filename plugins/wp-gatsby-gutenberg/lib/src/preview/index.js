@@ -9,64 +9,53 @@ import { addFilter } from "@wordpress/hooks"
 // import { PluginPostPublishPanel } from "@wordpress/edit-post"
 
 import store from "./store"
-import {
-  sendPreview,
-  // createClient,
-} from "./gatsby"
+import { sendPreview } from "./gatsby"
 
-if (window.wpGatsbyGutenberg) {
-  const { previewUrl } = window.wpGatsbyGutenberg
+const CoreBlockContext = createContext(null)
 
-  if (previewUrl) {
-    const CoreBlockContext = createContext(null)
+store.subscribe(() => {
+  sendPreview({
+    // client,
+    state: store.getState(),
+  })
+})
 
-    // const client = createClient({ previewUrl })
-
-    store.subscribe(() => {
-      sendPreview({
-        // client,
-        state: store.getState(),
-      })
+addFilter(`editor.BlockEdit`, `plugin-wp-gatsby-gutenberg-preview/BlockEdit`, Edit => {
+  return props => {
+    const registry = useRegistry()
+    const blocks = registry.select(`core/block-editor`).getBlocks()
+    const coreBlock = useContext(CoreBlockContext)
+    const id = useSelect(select => {
+      return select(`core/editor`).getCurrentPostId()
+    })
+    const slug = useSelect(select => {
+      return select(`core/editor`).getEditedPostAttribute(`slug`)
     })
 
-    addFilter(`editor.BlockEdit`, `plugin-wp-gatsby-gutenberg-preview/BlockEdit`, Edit => {
-      return props => {
-        const registry = useRegistry()
-        const blocks = registry.select(`core/block-editor`).getBlocks()
-        const coreBlock = useContext(CoreBlockContext)
-        const id = useSelect(select => {
-          return select(`core/editor`).getCurrentPostId()
-        })
-        const slug = useSelect(select => {
-          return select(`core/editor`).getEditedPostAttribute(`slug`)
-        })
+    const link = useSelect(select => {
+      return select(`core/editor`).getEditedPostAttribute(`link`)
+    })
 
-        const link = useSelect(select => {
-          return select(`core/editor`).getEditedPostAttribute(`link`)
-        })
+    const { setBlocks } = useDispatch(`wp-gatsby-gutenberg/preview`)
+    const coreBlockId = (coreBlock && coreBlock.attributes.ref && parseInt(coreBlock.attributes.ref, 10)) || null
 
-        const { setBlocks } = useDispatch(`wp-gatsby-gutenberg/preview`)
-        const coreBlockId = (coreBlock && coreBlock.attributes.ref && parseInt(coreBlock.attributes.ref, 10)) || null
-
-        useEffect(() => {
-          if (id) {
-            setBlocks({ id, blocks, coreBlockId, slug, link })
-          }
-        }, [blocks, coreBlockId, id])
-
-        if (props.name === `core/block`) {
-          return (
-            <CoreBlockContext.Provider value={props}>
-              <Edit {...props}></Edit>
-            </CoreBlockContext.Provider>
-          )
-        }
-
-        return <Edit {...props} />
+    useEffect(() => {
+      if (id) {
+        setBlocks({ id, blocks, coreBlockId, slug, link })
       }
-    })
+    }, [blocks, coreBlockId, id])
+
+    if (props.name === `core/block`) {
+      return (
+        <CoreBlockContext.Provider value={props}>
+          <Edit {...props}></Edit>
+        </CoreBlockContext.Provider>
+      )
+    }
+
+    return <Edit {...props} />
   }
-}
+})
 
 // const GatsbyWordpressGutenbergPreview
 
