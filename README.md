@@ -1,5 +1,11 @@
 # Gatsby WordPress Gutenberg Framework
 
+<a href="https://www.netlify.com">
+  <img src="https://www.netlify.com/img/global/badges/netlify-color-accent.svg"/>
+</a>
+
+<br>
+<br>
 This is a WIP, work is done in `develop` branch.
 
 See all the thoughts to the projects here: https://github.com/pristas-peter/gatsby-wordpress-gutenberg/issues/1
