@@ -4,14 +4,15 @@
   "main": "build/index.js",
   "license": "MIT",
   "devDependencies": {
-    "@wordpress/scripts": "6.2.0"
+    "@wordpress/scripts": "^7.1.2"
   },
   "scripts": {
     "start": "wp-scripts start",
     "build": "wp-scripts build"
   },
   "dependencies": {
-    "@wordpress/eslint-plugin": "^3.3.0",
-    "eslint-plugin-eslint-comments": "^3.1.2"
+    "@wordpress/eslint-plugin": "^4.0.0",
+    "eslint-plugin-eslint-comments": "^3.1.2",
+    "eslint-plugin-prettier": "^3.1.2"
   }
 }
