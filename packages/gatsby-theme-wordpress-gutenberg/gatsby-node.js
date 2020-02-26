@@ -86,9 +86,9 @@ const fetchLatest = async ({ graphql, postId, preview }) => {
             id
             postId
             link
-            link
+            slug
             parent {
-              type: __typename
+              typename: __typename
             }
             modifiedTime
             isPreview
@@ -322,12 +322,23 @@ const resolveComponentPath = async ({ store, componentPath }) => {
 // uses same alghoritm as component shadowing so the component which
 // is closest to the user's project in the template hierarchy wins
 // more info on templates further down in comments
-const resolveTemplateComponentPath = async ({ store, postId, link }) =>
+const resolveTemplateComponentPath = async ({ store, postId, link, typename, slug }) =>
   (await resolveComponentPath({ store, componentPath: path.join(`templates`, `by-id`, `${postId}`) })) ||
   (link &&
     (await resolveComponentPath({
       store,
       componentPath: path.join(`templates`, `by-link`, linkToFilename({ link })),
+    }))) ||
+  (typename &&
+    slug &&
+    (await resolveComponentPath({
+      store,
+      componentPath: path.join(`templates`, `by-type`, typename, slug),
+    }))) ||
+  (typename &&
+    (await resolveComponentPath({
+      store,
+      componentPath: path.join(`templates`, `by-type`, typename, `index`),
     }))) ||
   (await resolveComponentPath({
     store,
@@ -389,16 +400,18 @@ const resolveBlockFragment = async ({
 // - to override (shadow) the shipped template user can create files in its src/gatsby-source-wordpress-gutenberg/templates with following rules:
 //    (Insipired by: https://wphierarchy.com/)
 //    - index.js - override shipped main template for all posts
-//    - by-id/[wordpress-post-id].js - override template for post with id
-//    - by-link/[wordpress-post-link].js - override template for post with link (replace slashes with dashes) eq: blog/hello-world -> blog-hello-world.js
-//    TODO: add more override options (eq by post type) - use wp-graphql's Content interface / gatsby-source-wordpress
+//    - by-id/[wordpress id].js - override template for post with id
+//    - by-link/[wordpress link pathname].js - override template for post with link eq: blog/hello-world.js
+//    - by-type/[gatsby's graphql typename]/[wordpress slug].js -- override template for typename with slug
+//    - by-type/[gatsby's graphql typename]/index.js - override template for same typename
+
 // - the created template component can contain fragment definition on root Query type which will be
 //   automatically imported into the generated page query (useful to query post's YOAST seo/acf fields or all other gatsby's content)
 //   the user can use graphql $id variable in the graphql string which is the wordpress id of the post (Int!)
 // - template components gets the <Blocks /> component as its children prop
-// - the page generation can be turned off completely, user can than import src/gatsby-theme-wordpress-gutenberg/blocks/by-id/[post-id].js
-//   or src/gatsby-theme-wordpress-gutenberg/blocks/by-link/[link-converted-to-dashes].js file and
-//   use the fragment GutenbergBlocks[post-id] or GutenbergBlocks[link-converted-to-dashes] in the page query manually
+// - the page generation can be turned off completely, user can than import src/gatsby-theme-wordpress-gutenberg/blocks/by-id/[wordpress id].js
+//   or src/gatsby-theme-wordpress-gutenberg/blocks/by-link/[wordpress link pathname].js file and
+//   use the fragment GutenbergBlocks[postId] or GutenbergBlocks[linkPathname] in the page query manually
 const processContent = async (options, pluginOptions) => {
   const { graphql, actions, store } = options
 
@@ -463,7 +476,14 @@ const processContent = async (options, pluginOptions) => {
     }
 
     const processNode = async ({ node, preview }) => {
-      const { postId, blocks, link, id } = node
+      const {
+        postId,
+        blocks,
+        link,
+        id,
+        slug,
+        parent: { typename },
+      } = node
 
       const createBlocksComponent = async () => {
         const { innerBlocksLevel, blockTypenameByName } = await visitBlocks({ blocks })
@@ -515,6 +535,8 @@ const processContent = async (options, pluginOptions) => {
         ...options,
         postId,
         link,
+        typename,
+        slug,
       })
 
       const document = await extractGraphql({ componentPath: templateComponentPath })
