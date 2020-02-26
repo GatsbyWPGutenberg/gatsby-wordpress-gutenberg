@@ -3,19 +3,12 @@ const { HttpLink } = require(`apollo-link-http`)
 const { ApolloLink } = require(`apollo-link`)
 const { InMemoryCache } = require(`apollo-cache-inmemory`)
 const fetch = require(`node-fetch`)
-// const { onError } = require(`apollo-link-error`)
-// const { print } = require(`graphql`)
 
 const puppeteer = require(`puppeteer`)
 const { pascalize } = require(`humps`)
-const proxy = require(`http-proxy-middleware`)
+// const proxy = require(`http-proxy-middleware`)
 
-const {
-  // fetchAllGutenbergPosts,
-  fetchDynamicBlockNames,
-  fetchFirstGutenbergPost,
-  renderDynamicBlock,
-} = require(`./gatsby-gutenberg`)
+const { fetchDynamicBlockNames, fetchFirstGutenbergPost, renderDynamicBlock } = require(`./gatsby-gutenberg`)
 const {
   closeEditor,
   blockEditorPage,
@@ -27,9 +20,40 @@ const {
 } = require(`./gutenberg-puppeteer`)
 const { elapsedSeconds } = require(`./utils`)
 
+/**
+ * Here are some terms which developer needs to understand about gutenberg and this plugin
+ *
+ * - gutenberg is some sort of react/redux like post content editor application
+ *
+ * - the content of the block is stored structuraly in the post content using html comments to provide
+ *   information about the block
+ *
+ * - reusable block - is a block which can be reused between posts, the content of this block
+ *   is stored in the wordpress database under wp_block custom post type
+ *
+ * - dynamic block - is a block which outputs content dynamically through php (server side render)
+ *
+ * - gutenberg does not have server side block type registry, the registry lives in the browser's memory
+ *
+ * - our node model looks something like this:
+ *   - GutenbergContent => generic node which stores generic information about the post
+ *      - there is one GutenbergContent node per stored post content and one per preview content per wordpress post
+ *      - the node provides 'blocks' field which represents array of GutenbergBlock nodes
+ *      - there is parent/child gatsby's node relationship between GutenbergBlock nodes and GutenbergContent node
+ *      - there is parent/child gatsby's node relationship between GutenbergContent node and node which it was sourced from
+ *   - GutenbergBlock => graphql interface which represents block
+ *      - the node provides 'innerBlocks' fields which represents inner array of GutenbergBlock nodes
+ *      - there is parent/child gatsby's node relationship between GutenbergBlock node and innerBlocks nodes
+ */
+
+/**
+ * CONSTANTS
+ */
+
+// field name exposed through wp-graphql from our counterpart plugin
 const DEFAULT_SOURCE_NODE_FIELD_NAME = `gutenberg`
 
-// common fields used in block interface/object graphql types
+// common fields used in block interface/object graphql type
 // uses gatsby's schema builder syntax
 const BLOCK_INTERFACE_FIELDS = {
   id: `ID!`,
@@ -62,7 +86,13 @@ const BLOCK_INTERFACE_FIELDS = {
   innerBlocks: {
     type: `[GutenbergBlock!]!`,
     resolve: async (source, args, context, info) => {
+      // core/block represents reusable block
+      // our source plugin mimics the same db model so the the content of
+      // the reusable block is stored in its own node
       if (source.name === `core/block`) {
+        // we will distinguish between preview content and non preview content (they are stored in different nodes)
+        // the core/block storess reference to the wp_block custom post type in its ref attribute
+
         const filter = {
           isPreview: { eq: source.isPreview },
           postId: { eq: source.attributes.ref },
@@ -96,13 +126,21 @@ const BLOCK_INTERFACE_FIELDS = {
   },
 }
 
+/**
+ * MODULE VARIABLES
+ */
+
 // object to store promises which we don't want to await right away
 const jobs = {}
 
-// variables to store data between gatsby's lifecycle
+// variables to store data between gatsby's lifecycles
 const blockTypeByBlockName = new Map()
 let dynamicBlockNames
 let client
+
+/**
+ * UTILITY FUNCTIONS
+ */
 
 // converts wp block name to graphql type name
 const typenameFromBlockName = blockName => {
@@ -110,7 +148,7 @@ const typenameFromBlockName = blockName => {
   return `${split.map(pascalize).join(``)}GutenbergBlock`
 }
 
-// launches gutenberg in headless browser and saves reference to page for reuse
+// launches gutenberg in headless browser and saves reference to the page for reuse
 const launchGutenberg = async ({ reporter, postId }, pluginOptions) => {
   if (!jobs.launchGutenberg) {
     reporter.info(`spawning gutenberg`)
@@ -167,6 +205,10 @@ const closeGutenberg = async ({ reporter }) => {
   }
 }
 
+/**
+ * GATSBY'S LIFECYCLE
+ */
+
 exports.onPreBootstrap = async (options, pluginOptions) => {
   const { linkOptions } = pluginOptions
 
@@ -186,7 +228,6 @@ exports.onPreBootstrap = async (options, pluginOptions) => {
       // }),
       new HttpLink({
         fetch,
-
         // allow user to overide link through plugin options
         ...linkOptions,
       }),
@@ -210,6 +251,8 @@ exports.createSchemaCustomization = async (options, pluginOptions) => {
 
   const { createTypes } = actions
 
+  // represents block interface type
+  // so we can easily query all blocks
   createTypes(
     schema.buildInterfaceType({
       name: `GutenbergBlock`,
@@ -251,7 +294,8 @@ exports.createSchemaCustomization = async (options, pluginOptions) => {
   const post = await fetchFirstGutenbergPost({ fieldName: sourceNodeFieldName, client })
 
   if (post) {
-    // const page = await launchGutenberg({ ...options, postId: post[sourceNodeFieldName].postId }, pluginOptions)
+    // at first, we will launch gutenberg with random post id and get block registry
+    // then we can create proper types in gatsby for all block types
     const page = await launchGutenberg({ ...options, postId: post.postId }, pluginOptions)
 
     jobs.getBlockTypes = getBlockTypes(page)
@@ -398,7 +442,8 @@ exports.onCreateNode = async (options, pluginOptions) => {
 
   let field = node[sourceNodeFieldName]
 
-  // FIXME: -- start Remove when gatsby-source-experimental detect sourceNodeFieldName
+  // FIXME: -- start
+  // Remove this code when gatsby-source-experimental detects sourceNodeFieldName
 
   if (!field) {
     field = Object.keys(node).reduce((maybeObj, key) => {
@@ -418,6 +463,8 @@ exports.onCreateNode = async (options, pluginOptions) => {
 
   // FIXME: -- end
 
+  // the plugin tries to be independent from underlying source plugins, so we only check for field provided by our wordpress plugin
+  // this way we can also backport some features to be usable with gatsby-source-wordpress@v3
   if (field) {
     const { postId, postContent, blocksJSON, slug, link, isPreview = false, previewPostId = null, modifiedTime } = field
 
@@ -425,6 +472,8 @@ exports.onCreateNode = async (options, pluginOptions) => {
     // this is needed to be able to have nice interfaces upon querying and hence we can't
     // excent third party schema, our "master" node has reference to it as parent node
     // this will be also useful when using gatsby-source-wordpress later on
+
+    // our wordpress plugin stores preview content in its own custom post type
     const id = createNodeId(
       `gutenberg-content${isPreview ? `-preview` : ``}${previewPostId ? `-${previewPostId}` : ``}-${postId}`
     )
@@ -473,6 +522,7 @@ exports.onCreateNode = async (options, pluginOptions) => {
       },
     })
 
+    // this field is used in resolver in GutenbergContent type definition
     createNodeField({
       node: contentNode,
       name: `blocksNodes`,
@@ -488,67 +538,9 @@ exports.onCreateNode = async (options, pluginOptions) => {
   }
 }
 
-// exports.createResolvers = ({ createResolvers, createContentDigest, createNodeId, actions }, pluginOptions) => {
-//   const { createNode } = actions
-
-//   const { sourceNodeFieldName = DEFAULT_SOURCE_NODE_FIELD_NAME } = pluginOptions
-
-//   createResolvers({
-//     Query: {
-//       sourceWordpressGutenbergPreview: {
-//         type: `Boolean!`,
-//         args: {
-//           data: {
-//             type: `String!`,
-//           },
-//         },
-//         resolve: async (source, args) => {
-//           const create = async ({ postId, ...rest }) => {
-//             const node = {
-//               id: createNodeId(`gutenberg-preview-${postId}`),
-//               [sourceNodeFieldName]: {
-//                 postId,
-//                 ...rest,
-//                 isPreview: true,
-//               },
-//               internal: {
-//                 type: `GutenbergPreview`,
-//               },
-//             }
-
-//             node.internal.contentDigest = createContentDigest(JSON.stringify(node))
-//             await createNode(node)
-//           }
-
-//           const data = JSON.parse(args.data)
-
-//           await Promise.all(
-//             Object.keys(data).map(async postId => {
-//               const { blocks, blocksByCoreBlockId, link, slug } = data[postId]
-
-//               await Promise.all(
-//                 Object.keys(blocksByCoreBlockId).map(coreBlockPostId =>
-//                   create({
-//                     postId: parseInt(postId),
-//                     blocksJSON: JSON.stringify(blocksByCoreBlockId[coreBlockPostId]),
-//                   })
-//                 )
-//               )
-
-//               await create({ postId: parseInt(postId), blocksJSON: JSON.stringify(blocks), link, slug })
-//             })
-//           )
-
-//           return true
-//         },
-//       },
-//     },
-//   })
-// }
-
 exports.createPages = async options => {
   // we can close out headless browser for now
-  // it will be opened upon new node creation again
+  // it will be opened upon new node creation again when needed
   await closeGutenberg(options)
 }
 
@@ -573,7 +565,9 @@ exports.onCreateDevServer = (options, pluginOptions) => {
   // app.use(`/wp*`, proxyMiddleware)
 
   app.post(`/___gutenberg/refresh`, (req, res) => {
-    console.log(options)
+    // TODO: add code to manually run sourcing again
+    // this should be independent from used source plugins
+    // so when should provide callback suited for different sourcing plugins which will be provided by config
 
     res.send()
   })
