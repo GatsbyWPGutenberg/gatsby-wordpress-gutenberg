@@ -567,7 +567,8 @@ exports.onCreateDevServer = (options, pluginOptions) => {
   app.post(`/___gutenberg/refresh`, (req, res) => {
     // TODO: add code to manually run sourcing again
     // this should be independent from used source plugins
-    // so when should provide callback suited for different sourcing plugins which will be provided by config
+    // callback should be provided by plugin config, suited for different sourcing plugins
+    // we can provide defaults for gastby-source-wordpress-experimental
 
     res.send()
   })
