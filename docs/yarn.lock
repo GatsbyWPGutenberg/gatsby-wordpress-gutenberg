@@ -5848,6 +5848,11 @@ gatsby-plugin-page-creator@^2.1.40:
     lodash "^4.17.15"
     micromatch "^3.1.10"
 
+gatsby-plugin-preval@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/gatsby-plugin-preval/-/gatsby-plugin-preval-1.0.0.tgz#b0e9dcc9ef568cb6ca998f7211b5365824b97201"
+  integrity sha512-HpPp2bdA4nZsuD3R++GRhM9BPlFp8+ilkXIo53hNr14OlHXxrgimh9lqVVvP3q4JriHh+bYcvmfqm6msIsxxLg==
+
 gatsby-plugin-printer@1.0.x:
   version "1.0.8"
   resolved "https://registry.yarnpkg.com/gatsby-plugin-printer/-/gatsby-plugin-printer-1.0.8.tgz#281c562395b3cc80664da62267076fd4b7241dc5"
