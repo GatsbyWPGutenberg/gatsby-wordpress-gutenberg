@@ -40,10 +40,10 @@ module.exports = {
         },
         sidebarCategories: {
           null: [`index`],
-          "Getting Started": ["getting-started/installation"],
+          "Getting Started": [`getting-started/installation`],
         },
       },
     },
-    "gatsby-plugin-preval",
+    `gatsby-plugin-preval`,
   ],
 }
