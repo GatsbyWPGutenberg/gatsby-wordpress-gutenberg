@@ -1,13 +1,13 @@
 /* global preval */
-import PropTypes from 'prop-types';
-import React, {Fragment} from 'react';
-import TextFit from 'react-textfit';
-import {Global, css} from '@emotion/core';
-import {IconArrowRight} from '@apollo/space-kit/icons/IconArrowRight';
-import {colors} from 'gatsby-theme-apollo-core/src/utils/colors';
-import {smallCaps} from 'gatsby-theme-apollo-core/src/utils/typography';
+import PropTypes from "prop-types"
+import React, { Fragment } from "react"
+import TextFit from "react-textfit"
+import { Global, css } from "@emotion/core"
+import { IconArrowRight } from "@apollo/space-kit/icons/IconArrowRight"
+import { colors } from "gatsby-theme-apollo-core/src/utils/colors"
+import { smallCaps } from "gatsby-theme-apollo-core/src/utils/typography"
 
-const {fonts, image} = preval`
+const { fonts, image } = preval`
   const fs = require('fs');
   const path = require('path');
 
@@ -33,22 +33,22 @@ const {fonts, image} = preval`
     fonts,
     image: 'data:image/jpeg;base64,' + base64Image
   };
-`;
+`
 
 export default function SocialCard(props) {
   return (
     <div
       style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-start',
-        boxSizing: 'border-box',
+        display: `flex`,
+        flexDirection: `column`,
+        alignItems: `flex-start`,
+        boxSizing: `border-box`,
         width: 1200,
         height: 628,
         padding: 80,
-        fontFamily: "'Source Sans Pro'",
-        color: 'white',
-        backgroundImage: `url(${image})`
+        fontFamily: `'Source Sans Pro'`,
+        color: `white`,
+        backgroundImage: `url(${image})`,
       }}
     >
       <Global
@@ -66,21 +66,22 @@ export default function SocialCard(props) {
           fontWeight: 600,
           marginBottom: 16,
           color: colors.primaryLight,
-          ...smallCaps
+          ...smallCaps,
         }}
       >
         {props.subtitle}
         {props.category && (
           <Fragment>
-            {' '}
+            {` `}
             <IconArrowRight
               className="arrow-icon"
               style={{
-                width: '0.5em',
-                height: '0.5em',
-                verticalAlign: '0.05em'
+                width: `0.5em`,
+                height: `0.5em`,
+                verticalAlign: `0.05em`,
               }}
-            />{' '}
+            />
+            {` `}
             {props.category}
           </Fragment>
         )}
@@ -89,22 +90,24 @@ export default function SocialCard(props) {
         min={80}
         max={120}
         style={{
-          width: '100%',
+          width: `100%`,
           height: 250,
-          marginBottom: 'auto',
+          marginBottom: `auto`,
           lineHeight: 1.2,
-          colors: colors.text1
+          colors: colors.text1,
         }}
       >
-        {props.title.replace(/\s+(\S*)$/, '\xA0$1')}
+        {props.title.replace(/\s+(\S*)$/, `\xA0$1`)}
       </TextFit>
-      <TextFit min={80} max={120} style={{height: 70}}>GatsbyWPGutenberg</TextFit>
+      <TextFit min={80} max={120} style={{ height: 70 }}>
+        GatsbyWPGutenberg
+      </TextFit>
     </div>
-  );
+  )
 }
 
 SocialCard.propTypes = {
   title: PropTypes.string.isRequired,
   subtitle: PropTypes.string.isRequired,
-  category: PropTypes.string
-};
+  category: PropTypes.string,
+}

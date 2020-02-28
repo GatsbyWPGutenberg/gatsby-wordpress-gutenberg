@@ -11,12 +11,7 @@ const UniversalLink = ({ children, to, activeClassName, partiallyActive, ...othe
   // Use Gatsby Link for internal links, and <a> for others
   if (internal) {
     return (
-      <GatsbyLink
-        to={to}
-        activeClassName={activeClassName}
-        partiallyActive={partiallyActive}
-        {...other}
-      >
+      <GatsbyLink to={to} activeClassName={activeClassName} partiallyActive={partiallyActive} {...other}>
         {children}
       </GatsbyLink>
     )
