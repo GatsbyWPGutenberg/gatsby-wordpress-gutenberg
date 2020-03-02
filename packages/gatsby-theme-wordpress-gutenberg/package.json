@@ -33,8 +33,10 @@
   },
   "homepage": "https://github.com/pristas-peter/gatsby-wordpress-gutenberg#readme",
   "dependencies": {
+    "body-parser": "^1.19.0",
     "gatsby-page-utils": "^0.0.37",
     "gatsby-source-wordpress-gutenberg": "0.0.0",
-    "humps": "^2.0.1"
+    "humps": "^2.0.1",
+    "styled-components": "^5.0.1"
   }
 }

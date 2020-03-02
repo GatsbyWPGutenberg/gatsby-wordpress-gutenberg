@@ -1,1 +1,2 @@
-import "./preview"
+import './plugin';
+import './preview';

@@ -5,7 +5,6 @@ const { InMemoryCache } = require(`apollo-cache-inmemory`)
 const fetch = require(`node-fetch`)
 
 const puppeteer = require(`puppeteer`)
-const { pascalize } = require(`humps`)
 // const proxy = require(`http-proxy-middleware`)
 
 const { fetchDynamicBlockNames, fetchFirstGutenbergPost, renderDynamicBlock } = require(`./gatsby-gutenberg`)
@@ -18,7 +17,7 @@ const {
   login,
   NotABlockEditorPageError,
 } = require(`./gutenberg-puppeteer`)
-const { elapsedSeconds } = require(`./utils`)
+const { elapsedSeconds, typenameFromBlockName } = require(`./utils`)
 
 /**
  * Here are some terms which developer needs to understand about gutenberg and this plugin
@@ -67,12 +66,15 @@ const BLOCK_INTERFACE_FIELDS = {
   },
   clientId: `String!`,
   isValid: `Boolean!`,
+  modifiedTime: `String!`,
   isReusableBlock: `Boolean!`,
   isDynamicBlock: `Boolean!`,
   dynamicContent: {
     type: `String!`,
     description: `Block's server rendered output`,
   },
+  isPreview: `Boolean!`,
+  previewPostId: `Int`,
   name: `String!`,
   originalContent: {
     type: `String!`,
@@ -137,16 +139,6 @@ const jobs = {}
 const blockTypeByBlockName = new Map()
 let dynamicBlockNames
 let client
-
-/**
- * UTILITY FUNCTIONS
- */
-
-// converts wp block name to graphql type name
-const typenameFromBlockName = blockName => {
-  const split = blockName.split(`/`)
-  return `${split.map(pascalize).join(``)}GutenbergBlock`
-}
 
 // launches gutenberg in headless browser and saves reference to the page for reuse
 const launchGutenberg = async ({ reporter, postId }, pluginOptions) => {
@@ -459,6 +451,11 @@ exports.onCreateNode = async (options, pluginOptions) => {
 
       return maybeObj
     }, null)
+
+    // applies for root fields in Query which starts with `gutenberg`
+    if (field && !field.postId) {
+      field = null
+    }
   }
 
   // FIXME: -- end
@@ -542,34 +539,4 @@ exports.createPages = async options => {
   // we can close out headless browser for now
   // it will be opened upon new node creation again when needed
   await closeGutenberg(options)
-}
-
-exports.onCreateDevServer = (options, pluginOptions) => {
-  const { app, store } = options
-
-  // const {
-  //   program: { host, port, keyFile },
-  // } = store.getState()
-
-  // const url = new URL(`${keyFile ? `https` : `http`}://${host}:${port}`)
-
-  // const proxyMiddleware = proxy({
-  //   changeOrigin: true,
-  //   xfwd: true,
-  //   target: pluginOptions.uri,
-  //   headers: {
-  //     "X-Gatsby-Wordpress-Gutenberg-Preview-Url": url.origin,
-  //   },
-  // })
-
-  // app.use(`/wp*`, proxyMiddleware)
-
-  app.post(`/___gutenberg/refresh`, (req, res) => {
-    // TODO: add code to manually run sourcing again
-    // this should be independent from used source plugins
-    // callback should be provided by plugin config, suited for different sourcing plugins
-    // we can provide defaults for gastby-source-wordpress-experimental
-
-    res.send()
-  })
 }
