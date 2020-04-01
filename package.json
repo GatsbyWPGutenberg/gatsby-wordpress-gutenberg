@@ -4,7 +4,9 @@
   "description": "Gatsby WordPress Gutenberg Framework",
   "main": "packages/gatsby-source-wordpress-gutenberg/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "develop": "yarn workspace gatsby-wordpress-gutenberg-default-example run develop",
+    "backend": "docker-compose -f examples/gatsby-wordpress-gutenberg-default-example/backend/docker-compose.yml up"
   },
   "private": true,
   "workspaces": [

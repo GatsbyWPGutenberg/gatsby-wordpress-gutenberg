@@ -8,7 +8,14 @@
     },
     {
       "type": "path",
-      "url": "/gatsby-wordpress-gutenberg",
+      "url": "/plugins/wp-gatsby-gutenberg",
+      "options": {
+        "symlink": true
+      }
+    },
+    {
+      "type": "path",
+      "url": "/plugins/wp-gatsby",
       "options": {
         "symlink": true
       }
@@ -16,7 +23,8 @@
   ],
   "require": {
     "composer/installers": "~1.0",
-    "gatsby-wordpress-gutenberg/gatsby-wordpress-gutenberg": "@dev",
+    "gatsbyjs/wp-gatsby": "@dev",
+    "gatsby-wordpress-gutenberg/wp-gatsby-gutenberg": "@dev",
     "wp-api/basic-auth": "dev-master"
   }
 }

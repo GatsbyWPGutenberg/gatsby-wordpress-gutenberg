@@ -1,11 +1,11 @@
+/**
+ Contains functions to fetch data from our counterpart WP plugin Gatsby Gutenberg
+ */
+
 const gql = require(`graphql-tag`)
 
-// Contains functions to fetch data from our counterpart WP plugin Gatsby Gutenberg
-
-const fetchFirstGutenbergPost = async ({ client }) => {
-  const {
-    data: { gutenbergPosts },
-  } = await client.query({
+const fetchFirstGutenbergPost = async ({ client, fieldName }) => {
+  const { data, errors } = await client.query({
     query: gql`
       query GetFirstGutenbergPost {
         gutenbergPosts(first: 1) {
@@ -19,51 +19,11 @@ const fetchFirstGutenbergPost = async ({ client }) => {
     `,
   })
 
-  return gutenbergPosts.edges.length && gutenbergPosts.edges[0].node
-}
-
-const fetchAllGutenbergPosts = async ({ client, first, after }) => {
-  const posts = []
-
-  const {
-    data: { gutenbergPosts },
-  } = await client.query({
-    query: gql`
-      query GetAllGutenbergPosts($first: Int!, $after: String) {
-        gutenbergPosts(first: $first, after: $after) {
-          edges {
-            node {
-              __typename
-              id
-              postId: gutenbergPostId
-              postContent: gutenbergPostContent
-              permalink: gutenbergPermalink
-            }
-          }
-          pageInfo {
-            hasNextPage
-            endCursor
-          }
-        }
-      }
-    `,
-    variables: {
-      first,
-      after,
-    },
-  })
-
-  gutenbergPosts.edges.forEach(({ node }) => {
-    posts.push(node)
-  })
-
-  if (gutenbergPosts.pageInfo.hasNextPage) {
-    const nextPosts = await fetchAllGutenbergPosts({ client, first, after: gutenbergPosts.pageInfo.endCursor })
-
-    return [...posts, ...nextPosts]
+  if (errors && errors) {
+    throw errors[0]
   }
 
-  return posts
+  return data.gutenbergPosts.edges.length && data.gutenbergPosts.edges[0].node
 }
 
 const fetchDynamicBlockNames = async ({ client }) => {
@@ -100,7 +60,6 @@ const renderDynamicBlock = async ({ client, blockName, attributes }) => {
 
 module.exports = {
   fetchFirstGutenbergPost,
-  fetchAllGutenbergPosts,
   fetchDynamicBlockNames,
   renderDynamicBlock,
 }

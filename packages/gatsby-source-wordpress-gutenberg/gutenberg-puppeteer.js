@@ -1,4 +1,6 @@
-// Contains functions to interact with gutenberg through puppeteer (headless browser)
+/**
+ * Contains functions to interact with gutenberg through puppeteer (headless browser)
+ */
 
 // perform standard login through /wp-login.php
 const login = async (browser, url, user, password) => {
@@ -100,18 +102,6 @@ const getSaveContent = async (page, block) => {
     { block }
   )
 }
-
-// const getReusableBlock = async (page, id) => {
-//   await blockEditorReady(page)
-//   return await page.evaluate(
-//     async options => {
-//       return await window.wp.apiFetch({ path: `/wp/v2/blocks/${options.id}` }).then(block => {
-//         return window.wp.blocks.parse(block.content.raw).pop()
-//       })
-//     },
-//     { id }
-//   )
-// }
 
 module.exports = {
   blockEditorPage,

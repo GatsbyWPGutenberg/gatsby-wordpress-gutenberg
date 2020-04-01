@@ -6,7 +6,7 @@ services:
     command: install
     volumes:
       - ./wordpress:/app
-      - ../../..:/gatsby-wordpress-gutenberg:ro
+      - ../../../plugins:/plugins:ro
   wordpress:
     depends_on:
       - db
@@ -21,11 +21,11 @@ services:
       WORDPRESS_DB_PASSWORD: examplepass
       WORDPRESS_DB_NAME: exampledb
       WORDPRESS_CONFIG_EXTRA: |
-        define('GATSBY_WORDPRESS_GUTENBERG_PREVIEW_URL', 'http://localhost:8000');
+        define('WP_GATSBY_GUTENBERG_PREVIEW_URL', 'http://localhost:8000');
 
     volumes:
       - ./wordpress:/var/www/html
-      - ../../..:/gatsby-wordpress-gutenberg:ro
+      - ../../../plugins:/plugins:ro
   cli:
     depends_on:
       - db
@@ -33,7 +33,7 @@ services:
     image: wordpress:cli
     volumes:
       - ./wordpress:/var/www/html
-      - ../../..:/gatsby-wordpress-gutenberg:ro
+      - ../../../plugins:/plugins:ro
   db:
     image: mysql:5.7
     restart: always
