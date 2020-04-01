@@ -10,10 +10,10 @@ export const query = graphql`
   }
 `
 
-export default ({ data, children }) => (
+export default ({ data, pageContext, children }) => (
   <>
     <pre>This is post with hello-world permalink, it also has fragment on Query</pre>
-    <pre>{JSON.stringify(data, null, 2)}</pre>
+    <pre>{JSON.stringify({ data, pageContext }, null, 2)}</pre>
     <h2>and the blocks are</h2>
     {children}
   </>

@@ -13,6 +13,7 @@
   "dependencies": {
     "@wordpress/eslint-plugin": "^4.0.0",
     "eslint-plugin-eslint-comments": "^3.1.2",
-    "eslint-plugin-prettier": "^3.1.2"
+    "eslint-plugin-prettier": "^3.1.2",
+    "styled-components": "^5.0.1"
   }
 }

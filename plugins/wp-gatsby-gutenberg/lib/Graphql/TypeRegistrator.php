@@ -1,6 +1,7 @@
 <?php
 
 namespace WpGatsbyGutenberg\Graphql;
+
 use WPGraphQL\Utils\Utils;
 
 if (!defined('WP_GATSBY_GUTENBERG_GRAPHQL_POST_TYPE_INTERFACE_TYPE_NAME')) {
@@ -177,7 +178,7 @@ class TypeRegistrator
 					'resolve' => function ($model) {
 						return Utils::prepare_date_response(
 							get_post($model->ID)->post_modified_gmt
-						);
+						) . 'Z';
 					}
 				]
 			]
@@ -217,10 +218,8 @@ class TypeRegistrator
 					//   ->get_type(WP_GATSBY_GUTENBERG_GRAPHQL_POST_TYPE_INTERFACE_TYPE_NAME)
 					//   ->getField(WP_GATSBY_GUTENBERG_GRAPHQL_POST_TYPE_INTERFACE_FIELD_NAME)->config;
 
-					foreach (
-						$gutenberg_post_type_interface_config['fields']
-						as $key => $value
-					) {
+					foreach ($gutenberg_post_type_interface_config['fields']
+						as $key => $value) {
 						if (
 							substr($key, 0, strlen('gutenberg')) === 'gutenberg'
 						) {

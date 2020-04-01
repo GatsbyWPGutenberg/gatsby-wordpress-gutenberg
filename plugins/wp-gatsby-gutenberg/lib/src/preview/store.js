@@ -1,52 +1,83 @@
-import { registerStore } from "@wordpress/data"
+import { registerStore } from '@wordpress/data';
 
 export default registerStore(`wp-gatsby-gutenberg/preview`, {
-  reducer(state = {}, action) {
-    const { type, ...payload } = action
+	reducer(
+		state = {
+			blocksById: {},
+			previewUrl: null,
+		},
+		action
+	) {
+		const { type, ...payload } = action;
 
-    switch (type) {
-      case `SET_BLOCKS`: {
-        const { blocks, coreBlockId, id, ...rest } = payload
+		switch (type) {
+			case `SET_PREVIEW_URL`: {
+				const { previewUrl } = payload;
 
-        const stateById = state[action.id] || {
-          blocks: [],
-          blocksByCoreBlockId: {},
-        }
+				return {
+					...state,
+					previewUrl,
+				};
+			}
 
-        if (coreBlockId) {
-          return {
-            ...state,
-            [id]: {
-              ...stateById,
-              ...rest,
-              blocksByCoreBlockId: {
-                ...stateById.blocksByCoreBlockId,
-                [coreBlockId]: blocks,
-              },
-            },
-          }
-        }
+			case `SET_BLOCKS`: {
+				const { blocks, coreBlockId, id, ...rest } = payload;
 
-        return {
-          ...state,
-          [id]: {
-            ...stateById,
-            ...rest,
-            blocks: blocks,
-          },
-        }
-      }
-    }
+				const stateById = state.blocksById[action.id] || {
+					blocks: [],
+					blocksByCoreBlockId: {},
+				};
 
-    return state
-  },
+				if (coreBlockId) {
+					return {
+						...state,
+						blocksById: {
+							...state.blocksById,
+							[id]: {
+								...stateById,
+								...rest,
+								blocksByCoreBlockId: {
+									...stateById.blocksByCoreBlockId,
+									[coreBlockId]: blocks,
+								},
+							},
+						},
+					};
+				}
 
-  actions: {
-    setBlocks(payload) {
-      return {
-        ...payload,
-        type: `SET_BLOCKS`,
-      }
-    },
-  },
-})
+				return {
+					...state,
+					blocksById: {
+						...state.blocksById,
+						[id]: {
+							...stateById,
+							...rest,
+							blocks,
+						},
+					},
+				};
+			}
+		}
+
+		return state;
+	},
+
+	actions: {
+		setBlocks(payload) {
+			return {
+				...payload,
+				type: `SET_BLOCKS`,
+			};
+		},
+		setPreviewUrl(payload) {
+			return {
+				...payload,
+				type: `SET_PREVIEW_URL`,
+			};
+		},
+	},
+	selectors: {
+		getBatch: (state) => state.blocksById,
+		getPreviewUrl: (state) => state.previewUrl,
+	},
+});

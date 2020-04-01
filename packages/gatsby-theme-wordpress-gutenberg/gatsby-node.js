@@ -2,8 +2,8 @@ const { default: pluck } = require(`graphql-tag-pluck`)
 const { parse, Kind } = require(`graphql`)
 const path = require(`path`)
 const fs = require(`fs-extra`)
-const { pascalize } = require(`humps`)
 const chokidar = require(`chokidar`)
+const bodyParser = require(`body-parser`)
 
 /**
  * The main theme philosophy - user only cares about block component implementation / all other things are auto-handled with choices to opt-out
@@ -38,6 +38,7 @@ const chokidar = require(`chokidar`)
 
  *  - template components gets the <Blocks /> component as its children prop
 
+ *  - TBD:
  *  - the page generation can be turned off completely, user can than import src/gatsby-theme-wordpress-gutenberg/blocks/by-id/[wordpress id].js
  *    or src/gatsby-theme-wordpress-gutenberg/blocks/by-link/[wordpress link pathname].js file and
  *    use the fragment GutenbergBlocks[postId] or GutenbergBlocks[linkPathname] in the page query manually
@@ -48,9 +49,8 @@ const chokidar = require(`chokidar`)
  */
 
 const PLUGIN_NAME = require(`./package.json`).name
-const BLOCKS_PATH = path.join(`src`, PLUGIN_NAME, `blocks`)
-const PREVIEW_BLOCKS_PATH = path.join(`src`, PLUGIN_NAME, `preview-blocks`)
-const PAGES_PATH = path.join(`src`, PLUGIN_NAME, `pages`)
+const BLOCKS_PATH = path.join(`.cache`, `fragments`, PLUGIN_NAME, `components`, `blocks`)
+const PAGES_PATH = path.join(`.cache`, `fragments`, PLUGIN_NAME, PLUGIN_NAME, `pages`)
 
 /**
  * MODULE VARIABLES
@@ -68,8 +68,7 @@ const fragments = {
 `,
 }
 
-// converts post link to graphql typename
-const linkToTypename = ({ link }) => pascalize(new URL(link).pathname.replace(/(^\/|\/$)/g, ``))
+const typenameToFieldName = ({ typename }) => typename.charAt(0).toLowerCase() + typename.slice(1)
 
 /**
  * UTILITY FUNCTIONS
@@ -185,7 +184,7 @@ const fetchLatest = async ({ graphql, postId, preview }) => {
 
 // fetches inner blocks of block
 const fetchInnerBlocks = async ({ graphql, block: { __typename, id } }) => {
-  const field = __typename.charAt(0).toLowerCase() + __typename.slice(1)
+  const field = typenameToFieldName({ typename: __typename })
 
   const { data, errors } = await graphql(`
     ${fragments.GutenbergPostBlock}
@@ -207,14 +206,16 @@ const fetchInnerBlocks = async ({ graphql, block: { __typename, id } }) => {
 }
 
 // creates fragment sdl for all blocks/innerBlocks
-const createFragment = ({ name, blockFragmentNames, innerBlocksLevel }) => {
+const createFragment = ({ name, blockFragmentNames, innerBlocksLevel, preview }) => {
   const spreads = blockFragmentNames.map(blockFragmentName => `...${blockFragmentName}`).join(` `)
 
   // since we cannot create recursive fragment definition,
   // we have to statically analyse nesting count and generate proper fields selections
   const generate = (level = 0) => {
     let fragment =
-      level === 0 ? `{ __typename id ${spreads} ` : ` innerBlocks { __typename ... on GutenbergBlock { id } ${spreads}`
+      level === 0
+        ? `{ __typename id ${preview ? `clientId` : ``} ${spreads} `
+        : ` innerBlocks { __typename ... on GutenbergBlock { id ${preview ? `clientId` : ``} } ${spreads}`
 
     if (level < innerBlocksLevel) {
       fragment += generate(level + 1)
@@ -229,17 +230,20 @@ const createFragment = ({ name, blockFragmentNames, innerBlocksLevel }) => {
 }
 
 // creates source code for <Blocks/> component
-const createBlocksComponentSource = ({ blockTypenameByName, componentPathByName, sdl }) => `/* eslint-disable */
+const createBlocksComponentSource = ({ fragmentName, innerBlocksLevel, components, preview }) => `/* eslint-disable */
 /* Warning: this file is autogerated, any changes would be lost */
 
 import React from 'react'
 import { graphql } from 'gatsby'
 
-${Array.from(blockTypenameByName.entries())
-  .map(([blockName, blockTypename]) => `import ${blockTypename} from '${componentPathByName.get(blockName)}'`)
-  .join(`\n`)}
+${components.map(({ componentPath, typename }) => `import ${typename} from '${componentPath}'`).join(`\n`)}
 
-export const query = graphql\`${sdl}\`
+export const query = graphql\`${createFragment({
+  name: fragmentName,
+  blockFragmentNames: components.map(({ fragment }) => fragment.name.value),
+  innerBlocksLevel,
+  preview,
+})}\`
 
 const Blocks = ({blocks}) => {
   return (
@@ -247,10 +251,10 @@ const Blocks = ({blocks}) => {
       {blocks.map((block, i) => {  
         const children = block.innerBlocks ? <Blocks blocks={block.innerBlocks} /> : null;
 
-        ${Array.from(blockTypenameByName.entries())
+        ${components
           .map(
-            ([, blockTypename]) => `if (block.__typename === '${blockTypename}') {
-            return <${blockTypename} {...block} children={children} key={block.id} />
+            ({ typename }) => `if (block.__typename === '${typename}') {
+            return <${typename} {...block} children={children} key={block.id} />
           }`
           )
           .join(`\n        `)}
@@ -266,28 +270,26 @@ export default Blocks
 
 // creates source code for page
 const createPageComponentSource = ({
-  preview,
   id,
-  fragmentName,
-  postId,
-  componentPath,
+  queryName,
+  blocksComponentFragmentName,
+  blocksComponentPath,
   templateComponentPath,
   templateComponentFragmentName,
 }) => `/* eslint-disable */
 /* Warning: this file is autogerated, any changes would be lost */
 import React from 'react'
 import { graphql } from 'gatsby'
-import Blocks from '${componentPath}'
+import Blocks from '${blocksComponentPath}'
 import PageTemplate from '${templateComponentPath}'
 
 export const pageQuery = graphql\`
-  query GetGutenbergContent${preview ? `Preview` : ``}${postId}($postId: Int!) {
+  query ${queryName}($postId: Int!) {
     gutenbergContent(id: {eq: "${id}"}, postId: {eq: $postId}) {
       blocks {
-        ...${fragmentName}
+        ...${blocksComponentFragmentName}
       }
     }
-    
     ${templateComponentFragmentName ? `...${templateComponentFragmentName}` : ``}
   }\`
 
@@ -295,6 +297,39 @@ const Page = props =>
   <PageTemplate {...props}>
     <Blocks blocks={props.data.gutenbergContent.blocks} />
   </PageTemplate>
+
+export default Page
+`
+
+// creates source code for preview page
+const createPreviewPageComponentSource = ({
+  id,
+  queryName,
+  blocksComponentFragmentName,
+  blocksComponentPath,
+  templateComponentPath,
+  templateComponentFragmentName,
+}) => `/* eslint-disable */
+/* Warning: this file is autogerated, any changes would be lost */
+import React from 'react'
+import { graphql } from 'gatsby'
+import Blocks from '${blocksComponentPath}'
+import PageTemplate from '${templateComponentPath}'
+import PreviewPage from 'gatsby-theme-wordpress-gutenberg/src/components/previews/page'
+
+export const pageQuery = graphql\`
+  query ${queryName}($postId: Int!) {
+    gutenbergContent(id: {eq: "${id}"}, postId: {eq: $postId}) {
+      modifiedTime
+      blocks {
+        ...${blocksComponentFragmentName}
+      }
+    }
+    ${templateComponentFragmentName ? `...${templateComponentFragmentName}` : ``}
+  }\`
+
+const Page = props =>
+  <PreviewPage PageTemplate={PageTemplate} Blocks={Blocks} {...props} />
 
 export default Page
 `
@@ -404,23 +439,28 @@ const resolveTemplateComponentPath = async ({ store, postId, link, typename, slu
     componentPath: path.join(`templates`, `index`),
   }))
 
+// resolves unknown component path
+// uses same alghoritm as component shadowing so the component which
+// is closest to the user's project in the template hierarchy wins
 const resolveUnknownComponentPath = options =>
   resolveComponentPath({
     ...options,
     componentPath: path.join(`components`, `unknown-block`),
   })
 
-const resolveBlockComponentPath = async ({ blockName, unknownBlockComponentPath, ...options }) => {
+// resolves block component path
+// uses same alghoritm as component shadowing so the component which
+// is closest to the user's project in the template hierarchy wins
+const resolveBlockComponentPath = async ({ blockName, ...options }) => {
   const possibleComponentPath = await resolveComponentPath({
     ...options,
     componentPath: path.join(`components`, `blocks`, blockName),
   })
 
-  return possibleComponentPath || unknownBlockComponentPath
+  return possibleComponentPath
 }
 
-// resolves fragment definition located in component
-const resolveBlockFragment = async ({ componentPath }) => {
+const extractBlockFragment = async ({ componentPath }) => {
   const document = await extractGraphql({ componentPath })
 
   if (document) {
@@ -442,202 +482,267 @@ const resolveBlockFragment = async ({ componentPath }) => {
   throw new Error(`Fragment definition in ${componentPath} not found`)
 }
 
-// perform main theme logic
-const processContent = async (options, pluginOptions) => {
-  const { graphql, actions, store } = options
+// visits all blocks
+// applies visitor pattern on every block
+// calculates and returns innerBlocks level
+const visitBlocks = async ({ graphql, blocks, visitor }) => {
+  let innerBlocksLevel = 0
 
-  const { program } = store.getState()
+  const visitInnerBlock = async ({ innerBlock, currentInnerBlocksLevel }) => {
+    innerBlocksLevel = Math.max(currentInnerBlocksLevel, innerBlocksLevel)
+    await visitor({ block: innerBlock })
+    const result = await fetchInnerBlocks({ graphql, block: innerBlock })
+
+    if (result) {
+      const { innerBlocks } = result
+
+      await Promise.all(
+        innerBlocks.map(async innerBlock => {
+          await visitInnerBlock({ innerBlock, currentInnerBlocksLevel: currentInnerBlocksLevel + 1 })
+        })
+      )
+    }
+  }
+
+  await Promise.all(
+    blocks.map(async block => {
+      await visitor({ block })
+
+      await Promise.all(
+        block.innerBlocks.map(async innerBlock => {
+          await visitInnerBlock({ innerBlock, currentInnerBlocksLevel: 1 })
+        })
+      )
+    })
+  )
+
+  return innerBlocksLevel
+}
+
+const createMatchBlockComponent = () => {
+  const cache = new Map()
+  let unknownBlockData = null
+
+  const match = async ({ block, ...options }) => {
+    const { name, __typename: typename } = block
+
+    const cachedData = cache.get(name)
+
+    if (cachedData) {
+      return cachedData
+    }
+
+    let componentPath = await resolveBlockComponentPath({ blockName: name, ...options })
+    let fragment
+
+    if (!componentPath) {
+      if (!unknownBlockData) {
+        const unknownComponentPath = await resolveUnknownComponentPath(options)
+
+        unknownBlockData = {
+          componentPath: unknownComponentPath,
+          fragment: await extractBlockFragment({ componentPath: unknownComponentPath }),
+        }
+      }
+
+      componentPath = unknownBlockData.componentPath
+      fragment = unknownBlockData.fragment
+    } else {
+      fragment = await extractBlockFragment({ componentPath })
+    }
+
+    const data = {
+      componentPath,
+      fragment,
+      typename,
+    }
+
+    cache.set(name, data)
+    return data
+  }
+
+  match.cache = cache
+  return match
+}
+
+const createPostPage = async (options, pluginOptions) => {
+  const {
+    actions,
+    node,
+    matchBlockComponent,
+    blocksComponentPath,
+    blocksComponentFragmentName,
+    pageComponentPath,
+    pagePath,
+    queryName,
+    preview,
+    graphql,
+  } = options
+
   const { createPage } = actions
+
+  const {
+    postId,
+    link,
+    id,
+    slug,
+    blocks,
+    parent: { typename },
+  } = node
+
+  const componentByName = new Map()
+
+  const innerBlocksLevel = await visitBlocks({
+    blocks,
+    ...options,
+    visitor: async ({ block }) => {
+      componentByName.set(block.name, await matchBlockComponent({ ...options, block }))
+    },
+  })
+
+  await writeFile({
+    filePath: blocksComponentPath,
+    data: createBlocksComponentSource({
+      fragmentName: blocksComponentFragmentName,
+      innerBlocksLevel,
+      components: Array.from(componentByName.values()),
+      preview,
+    }),
+  })
+
+  const templateComponentPath = await resolveTemplateComponentPath({
+    ...options,
+    postId,
+    link,
+    typename,
+    slug,
+  })
+
+  const document = await extractGraphql({ componentPath: templateComponentPath })
+
+  let templateComponentFragment = null
+
+  if (document) {
+    document.definitions.forEach(d => {
+      if (d.kind === Kind.FRAGMENT_DEFINITION) {
+        if (templateComponentFragment || d.typeCondition.name.value !== `Query`) {
+          throw new Error(
+            `GraphQL Error: Template \`${templateComponentFragment}\` must contain only one fragment definition on Query type.`
+          )
+        }
+
+        templateComponentFragment = d
+      }
+    })
+  }
+
+  const data = preview
+    ? createPreviewPageComponentSource({
+        id,
+        postId,
+        queryName,
+        blocksComponentFragmentName,
+        blocksComponentPath,
+        templateComponentPath,
+        templateComponentFragmentName: templateComponentFragment && templateComponentFragment.name.value,
+      })
+    : createPageComponentSource({
+        id,
+        postId,
+        queryName,
+        blocksComponentFragmentName,
+        blocksComponentPath,
+        templateComponentPath,
+        templateComponentFragmentName: templateComponentFragment && templateComponentFragment.name.value,
+      })
+
+  await writeFile({
+    filePath: pageComponentPath,
+    data,
+  })
+
+  const context = {
+    postId,
+  }
+
+  if (preview) {
+    const query = await graphql(`query {
+      gutenbergPreviewsEvent(postId: {eq: ${postId}}) {
+        changedTime
+      }
+    }`)
+
+    if (query.errors) {
+      throw query.errors[0]
+    }
+
+    context.changedTime =
+      query.data && query.data.gutenbergPreviewsEvent && query.data.gutenbergPreviewsEvent.changedTime
+  }
+
+  await createPage({
+    component: pageComponentPath,
+    path: pagePath,
+    context,
+  })
+}
+
+const createPages = async (options, pluginOptions) => {
+  const { graphql, store } = options
+
+  const {
+    program: { directory },
+  } = store.getState()
+
+  const matchBlockComponent = createMatchBlockComponent()
 
   // first we fetch all gutenberg post ids which we have sourced
   const postIds = await fetchPostIds({ graphql })
 
-  if (postIds.length) {
-    const componentPathByName = new Map()
-    const fragmentNameByName = new Map()
+  await Promise.all(
+    postIds.map(async postId => {
+      const node = await fetchLatest({ graphql, postId })
 
-    const unknownBlockComponentPath = await resolveUnknownComponentPath(options)
-
-    // visits all blocks
-    // if there's a matching file for our block type in a template hierarchy that file is matched
-    // otherwise the block is associated with unknown block component
-    // also calculates how deep is innerBlocks nesting, so we can than create graphql query hence
-    // graphql syntax is not recursive
-    const visitBlocks = async ({ blocks }) => {
-      const blockTypenameByName = new Map()
-      let innerBlocksLevel = 0
-
-      const visitBlock = async ({ block }) => {
-        const { name } = block
-        blockTypenameByName.set(name, block.__typename)
-
-        if (!componentPathByName.has(name)) {
-          componentPathByName.set(
-            name,
-            await resolveBlockComponentPath({ blockName: name, unknownBlockComponentPath, ...options })
-          )
-        }
-
-        if (!fragmentNameByName.has(name)) {
-          const fragment = await resolveBlockFragment({ componentPath: componentPathByName.get(name) })
-          fragmentNameByName.set(name, fragment.name.value)
-        }
-      }
-
-      const visitInnerBlock = async ({ innerBlock, currentInnerBlocksLevel }) => {
-        innerBlocksLevel = Math.max(currentInnerBlocksLevel, innerBlocksLevel)
-
-        await visitBlock({ block: innerBlock })
-        const { innerBlocks } = await fetchInnerBlocks({ graphql, block: innerBlock })
-
-        await Promise.all(
-          innerBlocks.map(async innerBlock => {
-            await visitInnerBlock({ innerBlock, currentInnerBlocksLevel: currentInnerBlocksLevel + 1 })
-          })
+      if (node) {
+        await createPostPage(
+          {
+            ...options,
+            node,
+            matchBlockComponent,
+            blocksComponentPath: path.join(directory, BLOCKS_PATH, `${postId}.js`),
+            blocksComponentFragmentName: `GutenbergBlocks${postId}`,
+            pagePath: new URL(node.link).pathname,
+            pageComponentPath: path.join(directory, PAGES_PATH, `${linkToFilename({ link: node.link })}.js`),
+            queryName: `GetGutenbergPost${postId}`,
+          },
+          pluginOptions
         )
       }
 
-      await Promise.all(
-        blocks.map(async block => {
-          await visitBlock({ block })
+      const previewNode = await fetchLatest({ graphql, postId, preview: true })
 
-          await Promise.all(
-            block.innerBlocks.map(async innerBlock => {
-              await visitInnerBlock({ innerBlock, currentInnerBlocksLevel: 1 })
-            })
-          )
-        })
-      )
-
-      return { blockTypenameByName, innerBlocksLevel }
-    }
-
-    const processNode = async ({ node, preview }) => {
-      const {
-        postId,
-        blocks,
-        link,
-        id,
-        slug,
-        parent: { typename },
-      } = node
-
-      const createBlocksComponent = async () => {
-        const { innerBlocksLevel, blockTypenameByName } = await visitBlocks({ blocks })
-
-        const blockFragmentNames = Array.from(blockTypenameByName.keys()).map(name => fragmentNameByName.get(name))
-        const fragmentName = `${!preview ? `GutenbergBlocks` : `GutenbergPreviewBlocks`}${postId}`
-
-        const componentPath = path.join(
-          program.directory,
-          !preview ? BLOCKS_PATH : PREVIEW_BLOCKS_PATH,
-          `by-id`,
-          `${postId}.js`
+      if (previewNode) {
+        await createPostPage(
+          {
+            ...options,
+            node: previewNode,
+            preview: true,
+            matchBlockComponent,
+            blocksComponentPath: path.join(directory, BLOCKS_PATH, `previews`, `${postId}.js`),
+            blocksComponentFragmentName: `GutenbergBlocks${postId}Preview`,
+            pagePath: `___gutenberg/previews/${postId}`,
+            pageComponentPath: path.join(directory, PAGES_PATH, `___gutenberg/previews/${postId}.js`),
+            queryName: `GetGutenbergPost${postId}Preview`,
+          },
+          pluginOptions
         )
-
-        await writeFile({
-          filePath: componentPath,
-          data: createBlocksComponentSource({
-            sdl: createFragment({
-              name: fragmentName,
-              blockFragmentNames,
-              innerBlocksLevel,
-            }),
-            blockTypenameByName,
-            componentPathByName,
-          }),
-        })
-
-        if (link && !preview) {
-          await writeFile({
-            filePath: path.join(program.directory, BLOCKS_PATH, `by-link`, `${linkToFilename({ link })}.js`),
-            data: createBlocksComponentSource({
-              sdl: createFragment({
-                name: `GutenbergBlocks${linkToTypename({
-                  link,
-                })}`,
-                blockFragmentNames,
-                innerBlocksLevel,
-              }),
-              blockTypenameByName,
-              componentPathByName,
-            }),
-          })
-        }
-
-        return { fragmentName, componentPath }
       }
+    })
+  )
 
-      const templateComponentPath = await resolveTemplateComponentPath({
-        ...options,
-        postId,
-        link,
-        typename,
-        slug,
-      })
-
-      const document = await extractGraphql({ componentPath: templateComponentPath })
-
-      let templateComponentFragment = null
-
-      if (document) {
-        document.definitions.forEach(d => {
-          if (d.kind === Kind.FRAGMENT_DEFINITION) {
-            if (templateComponentFragment || d.typeCondition.name.value !== `Query`) {
-              throw new Error(
-                `GraphQL Error: Template \`${templateComponentFragment}\` must contain only one fragment definition on Query type.`
-              )
-            }
-
-            templateComponentFragment = d
-          }
-        })
-      }
-
-      const { fragmentName, componentPath } = await createBlocksComponent({
-        blocks,
-      })
-
-      const pageComponentPath = path.join(program.directory, PAGES_PATH, preview ? `___gutenberg` : ``, `${postId}.js`)
-
-      await writeFile({
-        filePath: pageComponentPath,
-        data: createPageComponentSource({
-          postId,
-          id,
-          preview,
-          fragmentName,
-          componentPath,
-          templateComponentPath,
-          templateComponentFragmentName: templateComponentFragment && templateComponentFragment.name.value,
-        }),
-      })
-
-      await createPage({
-        component: pageComponentPath,
-        path: preview ? `/___gutenberg/${postId}` : new URL(link).pathname,
-        context: {
-          postId,
-        },
-      })
-    }
-
-    await Promise.all(
-      postIds.map(async postId => {
-        const node = await fetchLatest({ graphql, postId })
-
-        if (node) {
-          await processNode({ node })
-        }
-
-        const previewNode = await fetchLatest({ graphql, postId, preview: true })
-
-        if (previewNode) {
-          await processNode({ node: previewNode, preview: true })
-        }
-      })
-    )
-  }
+  // FIXME: this is a hack to always refetch page queries in components, without this they are sometimes stale
+  const now = new Date()
+  await fs.utimes(__filename, now, now)
 }
 
 exports.onPreBootstrap = async options => {
@@ -648,16 +753,27 @@ exports.onPreBootstrap = async options => {
   } = store.getState()
 
   // perform cleanup
-  await Promise.all([
-    fs.emptyDir(path.join(directory, BLOCKS_PATH)),
-    fs.emptyDir(path.join(directory, PREVIEW_BLOCKS_PATH)),
-    fs.emptyDir(path.join(directory, PAGES_PATH)),
-  ])
+  await Promise.all([fs.emptyDir(path.join(directory, BLOCKS_PATH)), fs.emptyDir(path.join(directory, PAGES_PATH))])
 }
 
-exports.createPages = async (options, pluginOptions) => {
-  await processContent(options, pluginOptions)
+exports.createSchemaCustomization = async (options, pluginOptions) => {
+  const { actions, schema } = options
+
+  const { createTypes } = actions
+
+  createTypes(
+    schema.buildObjectType({
+      name: `GutenbergPreviewsEvent`,
+      fields: {
+        changedTime: `String!`,
+        postId: `Int!`,
+      },
+      interfaces: [`Node`],
+    })
+  )
 }
+
+exports.createPages = createPages
 
 exports.createPagesStatefully = (options, pluginOptions) => {
   if (process.env.NODE_ENV === `development`) {
@@ -679,7 +795,7 @@ exports.createPagesStatefully = (options, pluginOptions) => {
         return
       }
       reporter.info(`refreshing gutenberg pages`)
-      cb.current = processContent(options, pluginOptions)
+      cb.current = createPages(options, pluginOptions)
         .catch(err => {
           reporter.error(err)
         })
@@ -699,4 +815,65 @@ exports.createPagesStatefully = (options, pluginOptions) => {
       )
       .on(`all`, cb)
   }
+}
+
+exports.onCreateDevServer = (options, pluginOptions) => {
+  const { app, actions, reporter, getNodesByType, createNodeId, createContentDigest } = options
+
+  const { createNode } = actions
+
+  // TODO: Add proxy to enable previews for local development
+  // const url = new URL(`${keyFile ? `https` : `http`}://${host}:${port}`)
+  // const proxyMiddleware = proxy({
+  //   changeOrigin: true,
+  //   xfwd: true,
+  //   target: pluginOptions.uri,
+  //   headers: {
+  //     "X-Gatsby-Wordpress-Gutenberg-Preview-Url": url.origin,
+  //   },
+  // })
+  // app.use(`/wp-admin`, proxyMiddleware)
+
+  app.post(`/___gutenberg/previews/:postId(\\d+)`, async (req, res) => {
+    const parse = bodyParser.json()
+    // TODO: add authentication with token in header
+    parse(req, res, async () => {
+      try {
+        const postId = parseInt(req.params.postId)
+
+        if (req.body.changedTime) {
+          const node = {
+            id: createNodeId(`gutenberg-previews-event-${postId}`),
+            internal: {
+              type: `GutenbergPreviewsEvent`,
+            },
+            postId,
+            changedTime: req.body.changedTime,
+          }
+
+          node.internal.contentDigest = createContentDigest(JSON.stringify(node))
+          await createNode(node)
+        }
+
+        let previewUrl = null
+
+        for (const sitePageNode of getNodesByType(`SitePage`)) {
+          const pathToMatch = `/___gutenberg/previews/${postId}`
+
+          if (sitePageNode.path === pathToMatch) {
+            previewUrl = pathToMatch
+            break
+          }
+        }
+
+        res.send({
+          previewUrl,
+        })
+      } catch (error) {
+        reporter.error(error)
+        res.status(503)
+        res.send()
+      }
+    })
+  })
 }

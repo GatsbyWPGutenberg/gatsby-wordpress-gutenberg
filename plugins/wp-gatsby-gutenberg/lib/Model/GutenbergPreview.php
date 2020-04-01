@@ -79,7 +79,7 @@ class GutenbergPreview
 		return wp_insert_post($insert_options, true);
 	}
 
-	public function __construct()
+	public function __construct($preview_url)
 	{
 		add_filter('wgg_gutenberg_post_types', function ($post_types) {
 			return array_filter($post_types, function ($post_type) {
@@ -99,17 +99,15 @@ class GutenbergPreview
 			));
 		});
 
-		add_action('rest_api_init', function () {
+		add_action('rest_api_init', function () use ($preview_url) {
 			register_rest_route('gatsby-gutenberg/v1', '/previews/batch', array(
 				'methods' => 'POST',
 				'callback' => function (WP_REST_Request $request) {
 					$batch = $request->get_param('batch');
 
 					foreach ($batch as $post_id => $data) {
-						foreach (
-							$data['blocksByCoreBlockId']
-							as $core_block_id => $blocks
-						) {
+						foreach ($data['blocksByCoreBlockId']
+							as $core_block_id => $blocks) {
 							$result = self::insert_preview(
 								$core_block_id,
 								$post_id,
@@ -144,6 +142,66 @@ class GutenbergPreview
 					return current_user_can('edit_others_posts');
 				}
 			));
+
+			register_rest_route(
+				'gatsby-gutenberg/v1',
+				'/previews/(?P<id>\\d+)',
+				array(
+					'methods' => 'POST',
+					'callback' => function (WP_REST_Request $request) use (
+						$preview_url
+					) {
+						if (empty($preview_url)) {
+							return $this->get_preview_not_configured_error();
+						}
+
+						$url =
+							$preview_url .
+							'/___gutenberg/previews/' .
+							$request->get_param('id');
+
+						$result = $this->ensure_preview(
+							\wp_remote_request($url, [
+								'method' => 'POST',
+								'body' => json_encode($request->get_params()),
+								'headers' => [
+									'Content-Type' =>
+									'application/json; charset=utf-8'
+									// TODO: Add Auth
+								]
+							])
+						);
+
+						if (\is_wp_error($result)) {
+							return $result;
+						}
+
+						$data = json_decode(
+							wp_remote_retrieve_body($result),
+							true
+						);
+
+						return rest_ensure_response(array_merge($data, [
+							'previewUrl' => $data['previewUrl'] ? apply_filters(
+								'wgg_gatsby_preview_url',
+								$preview_url . $data['previewUrl']
+							) : null
+						]));
+					},
+					'args' => [
+						'id' => [
+							'required' => true,
+							'validate_callback' => 'is_numeric'
+						],
+						'changedTime' => [
+							'required' => true
+						]
+					],
+					'permission_callback' => function () {
+						return current_user_can('edit_others_posts');
+					}
+				)
+			);
 		});
 
 		add_action('graphql_register_types', function ($type_registry) {
@@ -224,10 +282,33 @@ class GutenbergPreview
 					'resolve' => function ($model) {
 						return Utils::prepare_date_response(
 							get_post($model->ID)->post_modified_gmt
-						);
+						) . 'Z';
 					}
 				]
 			);
 		});
+	}
+
+	protected function ensure_preview($result)
+	{
+		$code = wp_remote_retrieve_response_code($result);
+		if ($code !== 200) {
+			return new \WP_Error(
+				'preview_not_available',
+				__('Preview not availabe', 'wp-gatsby-gutenberg'),
+				array('status' => !empty($code) ? $code : 503)
+			);
+		}
+
+		return $result;
+	}
+
+	protected function get_preview_not_configured_error()
+	{
+		return new \WP_Error(
+			'preview_not_configured',
+			__('Preview not configured', 'wp-gatsby-gutenberg'),
+			array('status' => 403)
+		);
 	}
 }
