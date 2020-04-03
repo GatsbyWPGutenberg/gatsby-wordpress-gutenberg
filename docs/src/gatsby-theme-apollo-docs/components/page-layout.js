@@ -22,7 +22,7 @@ import {
 import { Helmet } from "react-helmet"
 import { IconLayoutModule } from "@apollo/space-kit/icons/IconLayoutModule"
 import { Link, graphql, navigate, useStaticQuery } from "gatsby"
-import { MobileLogo } from "gatsby-theme-apollo-docs/src/components/mobile-logo"
+// import { MobileLogo } from "gatsby-theme-apollo-docs/src/components/mobile-logo"
 import { Select } from "gatsby-theme-apollo-docs/src/components/select"
 import { SelectedLanguageContext } from "gatsby-theme-apollo-docs/src/components/multi-code-block"
 import { getSpectrumUrl, getVersionBasePath } from "gatsby-theme-apollo-docs/src/utils"
@@ -242,7 +242,7 @@ export default function PageLayout(props) {
           >
             <MobileNav>
               <MenuButton onClick={openSidebar} />
-              <MobileLogo width={32} fill="currentColor" />
+              {/* <MobileLogo width={32} fill="currentColor" /> */}
             </MobileNav>
             {algoliaApiKey && algoliaIndexName && (
               <Search siteName={siteName} apiKey={algoliaApiKey} indexName={algoliaIndexName} />
