@@ -81,6 +81,10 @@ const Eyebrow = styled.div({
   },
 })
 
+const NetlifyLink = styled.a({
+  marginRight: 12,
+})
+
 function getVersionLabel(version) {
   return `v${version}`
 }
@@ -216,6 +220,7 @@ export default function PageLayout(props) {
               />
             )}
           </HeaderInner>
+
           {sidebarContents && (
             <SidebarNav
               contents={sidebarContents}
@@ -229,21 +234,26 @@ export default function PageLayout(props) {
         <Main>
           <Header
             beforeContent={
-              versionDifference !== 0 && (
-                <Eyebrow>
-                  You&apos;re viewing documentation for a{` `}
-                  {versionDifference > 0
-                    ? `version of this software that is in development`
-                    : `previous version of this software`}
-                  . <Link to="/">Switch to the latest stable version</Link>
-                </Eyebrow>
-              )
+              <>
+                {versionDifference !== 0 && (
+                  <Eyebrow>
+                    You&apos;re viewing documentation for a{` `}
+                    {versionDifference > 0
+                      ? `version of this software that is in development`
+                      : `previous version of this software`}
+                    . <Link to="/">Switch to the latest stable version</Link>
+                  </Eyebrow>
+                )}
+              </>
             }
           >
             <MobileNav>
               <MenuButton onClick={openSidebar} />
               {/* <MobileLogo width={32} fill="currentColor" /> */}
             </MobileNav>
+            <NetlifyLink href="https://www.netlify.com">
+              <img src="https://www.netlify.com/img/global/badges/netlify-color-bg.svg" alt="Deploys by Netlify" />
+            </NetlifyLink>
             {algoliaApiKey && algoliaIndexName && (
               <Search siteName={siteName} apiKey={algoliaApiKey} indexName={algoliaIndexName} />
             )}
