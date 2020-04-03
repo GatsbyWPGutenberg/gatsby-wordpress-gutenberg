@@ -7,12 +7,12 @@ module.exports = {
     {
       resolve: `gatsby-theme-apollo-docs`,
       options: {
-        defaultVersion: `0.1 Beta`,
+        // defaultVersion: `0.1 Beta`,
         // versions: {
-        //   '0.1 Beta': 'version-0.1'
+        //   "0.1 Beta": `version-0.1`,
         // },
-        algoliaApiKey: `4575706171508518950c4bf031729fc9`,
-        algoliaIndexName: `wpgg`,
+        // algoliaApiKey: `4575706171508518950c4bf031729fc9`,
+        // algoliaIndexName: `wpgg`,
         siteName: `GatsbyWPGutenberg Docs`,
         menuTitle: `GatsbyWPGutenberg Menu`,
         subtitle: `GatsbyWPGutenberg`,
@@ -22,25 +22,37 @@ module.exports = {
         githubRepo: `GatsbyWPGutenberg/gatsby-wordpress-gutenberg/docs`,
         logoLink: `https://gwpg-docs.netlify.com`,
         navConfig: {
-          "wpgg.netlify.com": {
+          Docs: {
             url: `https://gwpg.netlify.com`,
-            description: `The GatsbyWPGutenberg page`,
+            description: `The GatsbyWPGutenberg docs`,
           },
           Github: {
             url: `https://github.com/GatsbyWPGutenberg`,
             description: `GatsbyWPGutenberg on Github`,
           },
         },
-        footerNavConfig: {
-          SomeFooterLink: {
-            href: `https://github.com/wpgg`,
-            target: `_blank`,
-            rel: `noopener noreferrer`,
-          },
-        },
+        // footerNavConfig: {
+        //   SomeFooterLink: {
+        //     href: `https://github.com/wpgg`,
+        //     target: `_blank`,
+        //     rel: `noopener noreferrer`,
+        //   },
+        // },
         sidebarCategories: {
           null: [`index`],
-          "Getting Started": [`getting-started/installation`],
+          Packages: [`packages/introduction`, `packages/sourcing`, `packages/theme`],
+          Installation: [`installation/installation`],
+          Blocks: [`blocks/introduction`, `blocks/shadowing`, `blocks/create`, `blocks/plugins`, `blocks/tutorial`],
+          "Page Templates": [
+            `page-templates/introduction`,
+            `page-templates/query-data`,
+            `page-templates/tutorial`,
+            `page-templates/opting-out`,
+          ],
+          Previews: [`previews/introduction`, `previews/page-previews`, `previews/block-previews`],
+          "Example Project": [`contributing/contributing`],
+          Contributing: [`contributing/contributing`],
+          "API Reference": [`api/tbd`],
         },
       },
     },
