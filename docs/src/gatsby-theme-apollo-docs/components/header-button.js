@@ -41,7 +41,7 @@ export default function HeaderButton() {
         target="_blank"
         rel="noopener noreferrer"
       >
-        GitHub
+        Visit us on GitHub
         <StyledIcon weight="thin" />
       </StyledLink>
     </Container>

@@ -108,7 +108,8 @@ The sourcing process is roughly explained in these steps:
 - `gatsby-source-wordpress-gutenberg` fetches the first gutenberg post id, opens gutenberg in a headless browser, fetches the block type registry and creates representing types in gatsby's schema
 - `gatsby-source-wordpress` sources exposed fields alongside other WordPress data
 - `gatsby-source-wordpress-gutenberg` idientifies exposed fields and uses previously opened browser page to parse blocks
-- when using previews `wp-gatsby-gutenberg` creates its own custom wp post type `wgg_preview`, which is exposed through rest api and used when you type new content in the gutenberg editor. The changes are batched and saved in the database as you type with one to one relationship to the edited post. The `gatsby-source-wordpress` then sources these posts as well and the `gatsby-source-gutenberg` resolves the matching.
+
+> The process also sources previews if enabled. You can read more about how previews work [here](/features/previews/).
 
 > For performance reasons the gutenberg page is opened only once in a headless browser and reused for different posts. Therefore you should not deregister/remove blocks from the block registry per post, rather globally. If you need to have this feature, you can still hide block types per post from the gutenberg UI, this way they will stay in the registry. It is possible to change this behaviour in the future if there is a high demand for it.
 

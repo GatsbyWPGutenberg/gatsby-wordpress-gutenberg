@@ -1,0 +1,42 @@
+---
+title: Block components
+description: Create your block component
+---
+
+You can write your own custom block implementation for each block. Otherwise the default `<UnknownBlock />` component is used which just displays the raw html output of the block.
+
+> You can import default gutenberg's css for blocks `@wordpress/block-library/build-style/style.css` in your project when relying on the unkown block a lot. This way you can get some default styling of the blocks for free.
+
+## Example
+
+To create your own block component:
+
+- create a file with path `src/gatsby-theme-wordpress-gutenberg/components/blocks/[block-name].[ext]` which has the component as its default export
+- the file has to contain a graphql fragment definition on the block's graphql type, where you can query for block fields, this fragment will be included in the page component query
+- the `innerBlocks` components are passed in as the `children` prop
+
+> The components can be shadowed. That means if multiple themes or your project implement the same block, the last definition wins.
+
+For example for the default `core/quote` block, the file should be created as `src/gatsby-theme-wordpress-gutenberg/components/blocks/core/quote.js`:
+
+> Graphql typename for block type name is camelCased and uses GutenbergBlock suffix, for example: `core/quote` -> `CoreQuoteGutenbergBlock`
+
+```jsx
+import React from "react"
+import { graphql } from "gatsby"
+
+export const query = graphql`
+  fragment Quote on CoreQuoteGutenbergBlock {
+    attributes {
+      value
+    }
+  }
+`
+
+export default ({ attributes }) => (
+  <p style={{ background: `orange` }}>
+    <strong>This is a custom implementation of quote block</strong>
+    My value is {attributes.value}
+  </p>
+)
+```
