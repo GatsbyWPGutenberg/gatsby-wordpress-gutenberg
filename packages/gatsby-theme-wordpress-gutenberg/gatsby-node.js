@@ -4,7 +4,6 @@ const path = require(`path`)
 const fs = require(`fs-extra`)
 const chokidar = require(`chokidar`)
 const bodyParser = require(`body-parser`)
-
 /**
  * The main theme philosophy - user only cares about block component implementation / all other things are auto-handled with choices to opt-out
 
@@ -820,23 +819,20 @@ exports.createPagesStatefully = (options, pluginOptions) => {
 exports.onCreateDevServer = (options, pluginOptions) => {
   const { app, actions, reporter, getNodesByType, createNodeId, createContentDigest } = options
 
+  const { previewToken } = pluginOptions
+
   const { createNode } = actions
 
-  // TODO: Add proxy to enable previews for local development
-  // const url = new URL(`${keyFile ? `https` : `http`}://${host}:${port}`)
-  // const proxyMiddleware = proxy({
-  //   changeOrigin: true,
-  //   xfwd: true,
-  //   target: pluginOptions.uri,
-  //   headers: {
-  //     "X-Gatsby-Wordpress-Gutenberg-Preview-Url": url.origin,
-  //   },
-  // })
-  // app.use(`/wp-admin`, proxyMiddleware)
-
   app.post(`/___gutenberg/previews/:postId(\\d+)`, async (req, res) => {
+    const token = req.get(`X-Gatsby-Wordpress-Gutenberg-Preview-Token`)
+
+    if (token && token !== previewToken) {
+      res.status(401)
+      res.send()
+      return
+    }
+
     const parse = bodyParser.json()
-    // TODO: add authentication with token in header
     parse(req, res, async () => {
       try {
         const postId = parseInt(req.params.postId)

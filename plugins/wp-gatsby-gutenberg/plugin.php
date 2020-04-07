@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Plugin Name: WP Gatsby Gutenberg
  * Plugin URI: https://github.com/pristas-peter/gatsby-wordpress-gutenberg

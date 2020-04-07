@@ -27,6 +27,12 @@ if (!defined('WP_GATSBY_GUTENBERG_GUTENBERG_PREVIEW_GRAPHQL_PLURAL_NAME')) {
 	);
 }
 
+define('WP_GATSBY_GUTENBERG_PREVIEW_HEADER_TOKEN', 'X-Gatsby-Wordpress-Gutenberg-Preview-Token');
+
+if (!defined('WP_GATSBY_GUTENBERG_PREVIEW_TOKEN')) {
+	define('WP_GATSBY_GUTENBERG_PREVIEW_TOKEN', null);
+}
+
 class GutenbergPreview
 {
 	public static $post_type = WP_GATSBY_GUTENBERG_GUTENBERG_PREVIEW_POST_TYPE_NAME;
@@ -77,6 +83,15 @@ class GutenbergPreview
 		}
 
 		return wp_insert_post($insert_options, true);
+	}
+
+	protected function prepare_headers($headers)
+	{
+		if (!empty('WP_GATSBY_GUTENBERG_PREVIEW_TOKEN')) {
+			$headers[WP_GATSBY_GUTENBERG_PREVIEW_HEADER_TOKEN] = WP_GATSBY_GUTENBERG_PREVIEW_TOKEN;
+		}
+
+		return $headers;
 	}
 
 	public function __construct($preview_url)
@@ -164,11 +179,11 @@ class GutenbergPreview
 							\wp_remote_request($url, [
 								'method' => 'POST',
 								'body' => json_encode($request->get_params()),
-								'headers' => [
+								'headers' => $this->prepare_headers([
 									'Content-Type' =>
 									'application/json; charset=utf-8'
-									// TODO: Add Auth
-								]
+
+								])
 							])
 						);
 
