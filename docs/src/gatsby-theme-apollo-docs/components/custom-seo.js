@@ -5,7 +5,6 @@ import { withPrefix } from "gatsby"
 
 export default function CustomSEO({ image, baseUrl, twitterHandle, ...props }) {
   const imagePath = withPrefix(`/` + image)
-  console.log(props.title)
   return (
     <SEO {...props} twitterCard="summary_large_image" favicon={null} titleTemplate={null}>
       <meta property="og:image" content={imagePath} />
