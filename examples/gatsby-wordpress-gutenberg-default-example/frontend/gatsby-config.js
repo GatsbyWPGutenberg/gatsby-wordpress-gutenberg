@@ -20,6 +20,7 @@ module.exports = {
         linkOptions: {
           uri: `http://admin:admin@localhost:8020/graphql`,
         },
+        previewToken: `P-123`,
       },
     },
     {

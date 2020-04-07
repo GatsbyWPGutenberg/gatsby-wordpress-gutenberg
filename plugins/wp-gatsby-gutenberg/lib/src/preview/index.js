@@ -30,77 +30,77 @@ export const usePreview = () => {
 	};
 };
 
-const CoreBlockContext = createContext(null);
+const CoreBlockContext = createContext( null );
 
 addFilter(
 	`editor.BlockEdit`,
 	`plugin-wp-gatsby-gutenberg-preview/BlockEdit`,
-	(Edit) => {
-		return (props) => {
+	( Edit ) => {
+		return ( props ) => {
 			const { clientId } = props;
 			const { enabled } = usePreview();
-			const [minHeight, setMinHeight] = useState(0);
-			const [changedTime, setChangedTime] = useState(new Date());
-			const [isPreviewActive, setIsPreviewActive] = useState(false);
+			const [ minHeight, setMinHeight ] = useState( 0 );
+			const [ changedTime, setChangedTime ] = useState( new Date() );
+			const [ isPreviewActive, setIsPreviewActive ] = useState( false );
 
 			const { setBlocks, setPreviewUrl } = useDispatch(
 				`wp-gatsby-gutenberg/preview`
 			);
 
 			const registry = useRegistry();
-			const blocks = registry.select(`core/block-editor`).getBlocks();
-			const coreBlock = useContext(CoreBlockContext);
+			const blocks = registry.select( `core/block-editor` ).getBlocks();
+			const coreBlock = useContext( CoreBlockContext );
 
 			const id = useSelect(
-				(select) => select(`core/editor`).getCurrentPostId(),
+				( select ) => select( `core/editor` ).getCurrentPostId(),
 				[]
 			);
 			const slug = useSelect(
-				(select) =>
-					select(`core/editor`).getEditedPostAttribute(`slug`),
+				( select ) =>
+					select( `core/editor` ).getEditedPostAttribute( `slug` ),
 				[]
 			);
 			const link = useSelect(
-				(select) =>
-					select(`core/editor`).getEditedPostAttribute(`link`),
+				( select ) =>
+					select( `core/editor` ).getEditedPostAttribute( `link` ),
 				[]
 			);
 
 			const previewUrl = useSelect(
-				(select) =>
-					select(`wp-gatsby-gutenberg/preview`).getPreviewUrl(),
+				( select ) =>
+					select( `wp-gatsby-gutenberg/preview` ).getPreviewUrl(),
 				[]
 			);
 
 			const coreBlockId =
-				(coreBlock &&
+				( coreBlock &&
 					coreBlock.attributes.ref &&
-					parseInt(coreBlock.attributes.ref, 10)) ||
+					parseInt( coreBlock.attributes.ref, 10 ) ) ||
 				null;
 
-			useEffect(() => {
-				if (id) {
-					setBlocks({
+			useEffect( () => {
+				if ( id ) {
+					setBlocks( {
 						id,
 						blocks,
 						coreBlockId,
 						slug,
 						link,
-					});
+					} );
 				}
-			}, [blocks, coreBlockId, id]);
+			}, [ blocks, coreBlockId, id ] );
 
-			const currentPromiseRef = useRef(null);
-			const retryTimeoutRef = useRef(null);
+			const currentPromiseRef = useRef( null );
+			const retryTimeoutRef = useRef( null );
 
-			useEffect(() => {
-				if (enabled) {
+			useEffect( () => {
+				if ( enabled ) {
 					const retry = () => {
-						if (retryTimeoutRef.current) {
-							clearTimeout(retryTimeoutRef.current);
+						if ( retryTimeoutRef.current ) {
+							clearTimeout( retryTimeoutRef.current );
 						}
 
-						const promise = postPreview({
+						const promise = postPreview( {
 							id,
 							data: {
 								changedTime,
@@ -108,25 +108,27 @@ addFilter(
 								coreBlockId,
 								id,
 							},
-						})
-							.then(({ previewUrl }) => {
-								if (currentPromiseRef.current === promise) {
-									setPreviewUrl({ previewUrl });
+						} )
+							.then( ( data ) => {
+								if ( currentPromiseRef.current === promise ) {
+									setPreviewUrl( {
+										previewUrl: data.previewUrl,
+									} );
 
-									if (!previewUrl) {
+									if ( ! data.previewUrl ) {
 										retryTimeoutRef.current = setTimeout(
 											retry,
 											1000
 										);
 									}
 								}
-							})
-							.catch(() => {
+							} )
+							.catch( () => {
 								retryTimeoutRef.current = setTimeout(
 									retry,
-									1000
+									1000 * 60
 								);
-							});
+							} );
 
 						currentPromiseRef.current = promise;
 					};
@@ -134,60 +136,60 @@ addFilter(
 					retry();
 
 					return () => {
-						if (retryTimeoutRef.current) {
-							clearTimeout(retryTimeoutRef.current);
+						if ( retryTimeoutRef.current ) {
+							clearTimeout( retryTimeoutRef.current );
 						}
 					};
 				}
-			}, [changedTime, clientId, coreBlockId, enabled, id]);
+			}, [ changedTime, clientId, coreBlockId, enabled, id ] );
 
-			useEffect(() => {
-				setChangedTime(new Date());
-			}, [blocks]);
+			useEffect( () => {
+				setChangedTime( new Date() );
+			}, [ blocks ] );
 
-			if (props.name === `core/block`) {
+			if ( props.name === `core/block` ) {
 				return (
-					<CoreBlockContext.Provider value={props}>
-						<Edit {...props}></Edit>
+					<CoreBlockContext.Provider value={ props }>
+						<Edit { ...props }></Edit>
 					</CoreBlockContext.Provider>
 				);
 			}
 
-			if (enabled) {
+			if ( enabled ) {
 				return (
 					<>
-						{isPreviewActive ? (
+						{ isPreviewActive ? (
 							<BlockPreview
-								minHeight={minHeight}
-								changedTime={changedTime}
-								{...props}
-								id={id}
-								previewUrl={previewUrl}
+								minHeight={ minHeight }
+								changedTime={ changedTime }
+								{ ...props }
+								id={ id }
+								previewUrl={ previewUrl }
 							/>
 						) : (
-							<Edit {...props} />
-						)}
+							<Edit { ...props } />
+						) }
 						<BlockControls>
 							<Toolbar>
 								<Button
 									className="components-toolbar__control"
-									label={__('Gatsby Preview')}
-									disabled={!previewUrl}
-									onClick={() => {
-										if (!isPreviewActive) {
+									label={ __( 'Gatsby Preview' ) }
+									disabled={ ! previewUrl }
+									onClick={ () => {
+										if ( ! isPreviewActive ) {
 											const el = document.querySelector(
-												`div[data-block="${props.clientId}"]`
+												`div[data-block="${ props.clientId }"]`
 											);
 
-											if (el) {
-												setMinHeight(el.clientHeight);
+											if ( el ) {
+												setMinHeight( el.clientHeight );
 											}
 										}
 
-										setIsPreviewActive(!isPreviewActive);
-									}}
+										setIsPreviewActive( ! isPreviewActive );
+									} }
 								>
-									<PreviewIcon active={isPreviewActive} />
+									<PreviewIcon active={ isPreviewActive } />
 								</Button>
 							</Toolbar>
 						</BlockControls>
@@ -195,7 +197,7 @@ addFilter(
 				);
 			}
 
-			return <Edit {...props} />;
+			return <Edit { ...props } />;
 		};
 	}
 );

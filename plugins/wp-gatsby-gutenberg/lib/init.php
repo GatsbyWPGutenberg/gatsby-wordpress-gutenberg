@@ -3,7 +3,7 @@
 namespace WpGatsbyGutenberg;
 
 if (!defined('WP_GATSBY_GUTENBERG_PREVIEW_URL')) {
-	define('WP_GATSBY_GUTENBERG_PREVIEW_URL', null);
+	define('WP_GATSBY_GUTENBERG_PREVIEW_URL', $_SERVER['HTTP_X_GATSBY_WORDPRESS_GUTENBERG_PREVIEW_URL'] ?? null);
 }
 
 if (!class_exists('WpGatsbyGutenberg')) {
