@@ -4,7 +4,7 @@
  * Plugin Name: WP Gatsby Gutenberg
  * Plugin URI: https://github.com/pristas-peter/gatsby-wordpress-gutenberg
  * Description: Enhance your gatsby project with gutenberg
- * Version: 0.0.0
+ * Version: 0.0.1
  * Author: Peter Pristas, Henrik Wirth
  * Text Domain: wp-gatsby-gutenberg
  *
