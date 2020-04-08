@@ -1,0 +1,181 @@
+---
+title: Sourcing
+description: How does sourcing work?
+---
+
+## How does Gutenberg store its content?
+
+> Get familiar with blocks core concepts from the [official handbook](https://developer.wordpress.org/block-editor/principles/key-concepts/).
+
+In a nutshell, `block` is some kind of unit for defining structured content. Every block has unique namespaced name and has to be registered in the `block registry` upon gutenberg bootstrap.
+Each block also contains `attributes` or configuration setting, which acts as a further metadata storage.
+
+The gutenberg editor than uses raw post html content to serialize/parse block information which is stored in html comments.
+
+Here is the example of serialized blocks in raw html post content,
+
+```html
+<!-- wp:columns {"columns":3} -->
+<div class="wp-block-columns has-3-columns">
+  <!-- wp:column -->
+  <div class="wp-block-column">
+    <!-- wp:paragraph -->
+    <p>Left</p>
+    <!-- /wp:paragraph -->
+  </div>
+  <!-- /wp:column -->
+
+  <!-- wp:column -->
+  <div class="wp-block-column">
+    <!-- wp:paragraph -->
+    <p><strong>Middle</strong></p>
+    <!-- /wp:paragraph -->
+  </div>
+  <!-- /wp:column -->
+
+  <!-- wp:column -->
+  <div class="wp-block-column"></div>
+  <!-- /wp:column -->
+</div>
+<!-- /wp:columns -->
+```
+
+and here the parsed counterpart:
+
+```js
+const blocks = [
+  {
+    blockName: "core/columns",
+    attrs: {
+      columns: 3,
+    },
+    innerBlocks: [
+      {
+        blockName: "core/column",
+        attrs: null,
+        innerBlocks: [
+          {
+            blockName: "core/paragraph",
+            attrs: null,
+            innerBlocks: [],
+            innerHTML: "\n<p>Left</p>\n",
+          },
+        ],
+        innerHTML: '\n<div class="wp-block-column"></div>\n',
+      },
+      {
+        blockName: "core/column",
+        attrs: null,
+        innerBlocks: [
+          {
+            blockName: "core/paragraph",
+            attrs: null,
+            innerBlocks: [],
+            innerHTML: "\n<p><strong>Middle</strong></p>\n",
+          },
+        ],
+        innerHTML: '\n<div class="wp-block-column"></div>\n',
+      },
+      {
+        blockName: "core/column",
+        attrs: null,
+        innerBlocks: [],
+        innerHTML: '\n<div class="wp-block-column"></div>\n',
+      },
+    ],
+    innerHTML: '\n<div class="wp-block-columns has-3-columns">\n\n\n\n</div>\n',
+  },
+]
+```
+
+## Issues with Gutenberg
+
+Gutenberg's main issue lies within its client-side only architecture for registering/validating blocks. This way the block registry and block definitions are only available in the editor itself and not available from the PHP side of WordPress. This exposes many challenges on how to actually expose this information outside of WordPress.
+
+> There is also a wordpress's php `parse_blocks()` function. However it does not respect many aspects of block parsing which are evaluated inside gutenberg like attributes parsed from html nodes or block validation. Also there is no `block_type registry` on the server, so you have no way to know how the blocks are defined.
+
+## How is the content sourced?
+
+> The main maintainer of this project is also the author of the [`wp-graphql-gutenberg`](https://github.com/pristas-peter/wp-graphql-gutenberg). However this project is using its own parsing solution written in JS which scales better. You can however use both of these solutions at the same time.
+
+The source plugin spins up an instance of headless [`puppeteer`](https://github.com/puppeteer/puppeteer) browser during the gatsby's sourcing lifecycle and therefore the content is parsed just the same as it is inside gutenberg.
+
+> The source plugin is based on the new `gatsby-source-wordpress` (v4 - experimental) which uses `wp-graphql` under the hood. However the code was written to be able to support also an older version (v3), which uses WP REST API, if there is a high demand for it.
+
+The sourcing process is roughly explained in these steps:
+
+- `wp-gatsby-gutenberg` extends graphql schema with fields needed to resolve various gutenberg data, among other the plugin exposes raw html post content (with respect to user's capabilities), modification time, fields to render dynamic blocks and so...
+- `gatsby-source-wordpress-gutenberg` fetches the first gutenberg post id, opens gutenberg in a headless browser, fetches the block type registry and creates representing types in gatsby's schema
+- `gatsby-source-wordpress` sources exposed fields alongside other WordPress data
+- `gatsby-source-wordpress-gutenberg` idientifies exposed fields and uses previously opened browser page to parse blocks
+
+> The process also sources previews if enabled. You can read more about how previews work [here](/features/previews/).
+
+For performance reasons the gutenberg page is opened only once in a headless browser and reused for different posts. Therefore you should not deregister/remove blocks from the block registry per post, rather globally. If you need to have this feature, you can still hide block types per post from the gutenberg UI, this way they will stay in the registry. It is possible to change this behaviour in the future if there is a high demand for it.
+
+## How to query
+
+> When mentioning the "post" term below, all the WordPress post types are assumed, not just the Post
+
+The best way to explore the sourced content is through gatsby's develop GraphiQL web interface where you can find descriptions for created types and their fields.
+
+Here are some tips which you can utilise when checking out the types:
+
+- all created graphql types have `Gutenberg` inside their name
+- graphql typename for block type name is camelCased and uses GutenbergBlock suffix, for example: `core/paragraph` -> `CoreParagraphGutenbergBlock`
+- every block type has its own graphql type which implements common `GutenbergBlock` interface
+- for each parsed post and its content, there is a representing `GutenbergContent` node which has `blocks` field representing all blocks inside the content
+
+> There are basically two `GutenbergContent` nodes per one post. One is sourced from post content stored in WordPress database, and one when using previews. You can differntiate between them using filter on `isPreview` field.
+
+Example query:
+
+```graphql
+query {
+  gutenbergContent(postId: { eq: 1 }, isPreview: { eq: false }) {
+    blocks {
+      __typename
+      ... on CoreParagraphGutenbergBlock {
+        innerBlocks {
+          __typename
+        }
+        isDynamicBlock
+        isReusableBlock
+        isValid
+        isPreview
+        name
+        saveContent
+        attributes {
+          content
+          dropCap
+        }
+      }
+    }
+  }
+}
+```
+
+```json
+{
+  "data": {
+    "gutenbergContent": {
+      "blocks": [
+        {
+          "__typename": "CoreParagraphGutenbergBlock",
+          "innerBlocks": [],
+          "isDynamicBlock": false,
+          "isReusableBlock": false,
+          "isValid": true,
+          "isPreview": true,
+          "name": "core/paragraph",
+          "saveContent": "<p>Welcome to WordPress. This is your first post. Edit or delete it, then start writing!</p>",
+          "attributes": {
+            "content": "Welcome to WordPress. This is your first post. Edit or delete it, then start writing!",
+            "dropCap": false
+          }
+        }
+      ]
+    }
+  }
+}
+```

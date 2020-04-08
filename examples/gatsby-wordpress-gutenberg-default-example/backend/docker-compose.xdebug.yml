@@ -1,0 +1,7 @@
+version: "3.1"
+
+services:
+  wordpress:
+    image: andreccosta/wordpress-xdebug
+    environment:
+      XDEBUG_CONFIG: remote_host=host.docker.internal

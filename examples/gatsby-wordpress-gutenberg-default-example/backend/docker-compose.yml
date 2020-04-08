@@ -1,0 +1,48 @@
+version: "3.1"
+
+services:
+  composer:
+    image: composer
+    command: install
+    volumes:
+      - ./wordpress:/app
+      - ../../../plugins:/plugins:ro
+  wordpress:
+    depends_on:
+      - db
+      - composer
+    image: wordpress
+    restart: always
+    ports:
+      - 8020:80
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: exampleuser
+      WORDPRESS_DB_PASSWORD: examplepass
+      WORDPRESS_DB_NAME: exampledb
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_GATSBY_GUTENBERG_PREVIEW_URL', 'http://localhost:8000');
+
+    volumes:
+      - ./wordpress:/var/www/html
+      - ../../../plugins:/plugins:ro
+  cli:
+    depends_on:
+      - db
+      - wordpress
+    image: wordpress:cli
+    volumes:
+      - ./wordpress:/var/www/html
+      - ../../../plugins:/plugins:ro
+  db:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_DATABASE: exampledb
+      MYSQL_USER: exampleuser
+      MYSQL_PASSWORD: examplepass
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_RANDOM_ROOT_PASSWORD: "1"
+    volumes:
+      - ./db:/var/lib/mysql
+      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d

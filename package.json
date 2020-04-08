@@ -1,0 +1,40 @@
+{
+  "name": "gatsby-wordpress-gutenberg",
+  "version": "0.0.1",
+  "description": "Gatsby WordPress Gutenberg Framework",
+  "main": "packages/gatsby-source-wordpress-gutenberg/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "develop": "yarn workspace gatsby-wordpress-gutenberg-default-example run develop",
+    "backend": "docker-compose -f examples/gatsby-wordpress-gutenberg-default-example/backend/docker-compose.yml up"
+  },
+  "private": true,
+  "workspaces": [
+    "examples/*",
+    "examples/gatsby-wordpress-gutenberg-default-example/frontend",
+    "packages/*"
+  ],
+  "contributors": [
+    {
+      "name": "Peter Pristas",
+      "email": "pristas.peter@gmail.com",
+      "url": "https://github.com/pristas-peter"
+    },
+    {
+      "name": "Henrik Wirth",
+      "url": "https://github.com/henrikwirth"
+    }
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@prettier/plugin-php": "^0.12.0",
+    "lerna": "^3.20.2",
+    "prettier": "^1.19.1"
+  },
+  "dependencies": {
+    "eslint-config-google": "^0.14.0",
+    "eslint-config-prettier": "^6.9.0",
+    "eslint-plugin-filenames": "^1.3.2",
+    "eslint-plugin-prettier": "^3.1.2"
+  }
+}

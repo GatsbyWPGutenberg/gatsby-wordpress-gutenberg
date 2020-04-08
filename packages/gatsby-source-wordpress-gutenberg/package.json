@@ -1,0 +1,48 @@
+{
+  "name": "gatsby-source-wordpress-gutenberg",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "gatsby",
+    "gatsby-plugin"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pristas-peter/gatsby-wordpress-gutenberg.git",
+    "directory": "packages/gatsby-source-wordpress-gutenberg"
+  },
+  "contributors": [
+    {
+      "name": "Peter Pristas",
+      "email": "pristas.peter@gmail.com",
+      "url": "https://github.com/pristas-peter"
+    },
+    {
+      "name": "Henrik Wirth",
+      "url": "https://github.com/henrikwirth"
+    }
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/pristas-peter/gatsby-wordpress-gutenberg/issues"
+  },
+  "homepage": "https://github.com/pristas-peter/gatsby-wordpress-gutenberg#readme",
+  "dependencies": {
+    "apollo-cache-inmemory": "^1.6.5",
+    "apollo-client": "^2.6.8",
+    "apollo-link": "^1.2.13",
+    "apollo-link-error": "^1.1.12",
+    "apollo-link-http": "^1.5.16",
+    "fs-extra": "^8.1.0",
+    "graphql": "^14.5.8",
+    "graphql-tag": "^2.10.1",
+    "graphql-tag-pluck": "^0.8.7",
+    "graphql-tools": "^4.0.6",
+    "node-fetch": "^2.6.0",
+    "puppeteer": "^2.0.0"
+  }
+}

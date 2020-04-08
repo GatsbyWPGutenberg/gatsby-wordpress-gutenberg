@@ -1,0 +1,49 @@
+---
+title: Page templates
+description: How to use page templates
+---
+
+Page templates are component files which are used as a `component` field when autogenerating gatsby pages from gutenberg content.
+Creating your own page template is optional.
+
+You can create your own templates (shadow the shipped one), by creating a file in `src/gatsby-source-wordpress-gutenberg/templates` with any of these paths:
+
+- index.js - override shipped main template for all posts
+- by-id/[wordpress id].js - override template for post with id
+- by-link/[wordpress slug].js - override template for post with link eq: blog/hello-world.js
+- by-type/[gatsby's graphql typename]/[wordpress slug].js -- override template for typename with slug
+- by-type/[gatsby's graphql typename]/index.js - override template for same typename
+
+> Template components get the `<Blocks />` component as `children` prop.
+
+The created template file can also contain a graphql fragment definition on root `Query` type which will be automatically used in the generated page query (useful to query post's YOAST seo/acf fields or all other gatsby's content). You can also use graphql `$id` variable in the graphql string which is the wordpress database id of the post (`Int!`).
+
+## Example
+
+To target the the default wordpress "Hello world" post, we can create a file with path `src/gatsby-source-wordpress-gutenberg/templates/by-link/hello-world.js` with content:
+
+```jsx
+import React from "react"
+import { graphql } from "gatsby"
+
+// this fragment is optional
+// note how we use the $postId variable
+// wpPost field on Query is available through gatsby-source-wordpress (v4)
+export const query = graphql`
+  fragment HelloWorld on Query {
+    wpPost(databaseId: { eq: $postId }) {
+      modifiedGmt
+      slug
+    }
+  }
+`
+
+export default ({ data, pageContext, children }) => (
+  <>
+    <pre>This is post with hello-world permalink, it also has fragment on Query</pre>
+    <pre>{JSON.stringify({ data, pageContext }, null, 2)}</pre>
+    <h2>and the blocks are</h2>
+    {children}
+  </>
+)
+```
