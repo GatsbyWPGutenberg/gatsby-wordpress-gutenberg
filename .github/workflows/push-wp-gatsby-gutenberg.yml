@@ -1,9 +1,8 @@
 name: Push to wp-gatsby-gutenberg
-on: push
-# on:
-#     push:
-#         tags:
-#             - v*
+on:
+  push:
+    branches:
+      - master # Push events on master branch
 jobs:
   publish:
     runs-on: ubuntu-latest
