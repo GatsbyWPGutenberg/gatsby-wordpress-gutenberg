@@ -2,19 +2,17 @@ import React from "react"
 import { graphql } from "gatsby"
 
 export const query = graphql`
-  fragment Quote on CoreQuoteGutenbergBlock {
+  fragment Quote on WpCoreQuoteBlock {
     attributes {
-      value
-      className
+      ... on WpCoreQuoteBlockAttributes {
+        value
+        className
+      }
     }
   }
 `
-
-export default props => (
+export default (props) => (
   <>
-    <p style={{ background: `orange` }}>
-      <strong>This is a custom implementation of quote block with props</strong>
-      <p>{JSON.stringify(props)}</p>
-    </p>
+    <p style={{ backgroundColor: `blue` }}>{props.value}</p>
   </>
 )
