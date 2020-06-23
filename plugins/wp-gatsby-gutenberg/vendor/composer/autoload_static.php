@@ -16,14 +16,14 @@ class ComposerStaticInit0cfb58398052e50dda3e9dded49931ac
     public static $prefixDirsPsr4 = array (
         'GatsbyWordpressGutenberg\\' => 
         array (
-            0 => __DIR__ . '/../..' . '/lib',
+            0 => __DIR__ . '/../..' . '/src',
         ),
     );
 
     public static $classMap = array (
-        'WpGatsbyGutenberg\\Graphql\\TypeRegistrator' => __DIR__ . '/../..' . '/lib/Graphql/TypeRegistrator.php',
-        'WpGatsbyGutenberg\\Model\\GutenbergPreview' => __DIR__ . '/../..' . '/lib/Model/GutenbergPreview.php',
-        'WpGatsbyGutenberg\\WpGatsbyGutenberg' => __DIR__ . '/../..' . '/lib/init.php',
+        'WPGatsbyGutenberg\\Admin\\Editor' => __DIR__ . '/../..' . '/src/Admin/Editor.php',
+        'WPGatsbyGutenberg\\Admin\\Settings' => __DIR__ . '/../..' . '/src/Admin/Settings.php',
+        'WPGatsbyGutenberg\\Preview\\Preview' => __DIR__ . '/../..' . '/src/Preview/Preview.php',
     );
 
     public static function getInitializer(ClassLoader $loader)
