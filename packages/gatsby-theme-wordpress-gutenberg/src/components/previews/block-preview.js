@@ -1,105 +1,56 @@
-import React, { useMemo } from "react"
-import styled, { keyframes } from "styled-components"
-import { useIsUpToDate } from "./status"
+import React, { useEffect, useState } from "react"
+import { createPortal } from "react-dom"
 
-const animation = keyframes`
-  0% {
-      background-size: 200% 100%;
-      background-position: left -31.25% top 0%;
-  }
-  50% {
-      background-size: 800% 100%;
-      background-position: left -49% top 0%;
-  }
-  100% {
-      background-size: 400% 100%;
-      background-position: left -102% top 0%;
-  }
-`
+export default ({ Blocks }) => {
+  const [el, setEl] = useState(null)
+  const [previewUUID, setPreviewUUID] = useState(null)
 
-const Progress = styled.progress`
-  appearance: none;
-  border: none;
-  height: 0.25rem;
-  color: rgb(102, 51, 153);
-  background-color: rgba(102, 51, 153, 0.12);
-  font-size: 1rem;
-  width: 100%;
-
-  &::-webkit-progress-bar {
-    background-color: transparent;
-  }
-
-  &:indeterminate {
-    background-size: 200% 100%;
-    background-image: linear-gradient(
-      to right,
-      transparent 50%,
-      currentColor 50%,
-      currentColor 60%,
-      transparent 60%,
-      transparent 71.5%,
-      currentColor 71.5%,
-      currentColor 84%,
-      transparent 84%
-    );
-    animation: ${animation} 2s infinite linear;
-
-    &::-moz-progress-bar {
-      background-color: transparent;
-    }
-
-    &::-ms-fill {
-      animation-name: none;
-    }
-  }
-`
-
-const findBlock = ({ blocks, clientId }) => {
-  for (const block of blocks) {
-    if (block.clientId === clientId) {
-      return block
-    }
-
-    const result = findBlock({ blocks: block.innerBlocks || [], clientId })
-
-    if (result) {
-      return result
-    }
-  }
-
-  return null
-}
-
-export const useBlockPreview = () => {
-  let clientId = null
-  let changedTime = null
-
-  if (typeof window !== `undefined`) {
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    clientId = params.get(`clientId`) || null
-    changedTime = params.get(`changedTime`) || null
 
-    if (changedTime) {
-      changedTime = new Date(changedTime)
+    const style = document.createElement("style")
+    const div = document.createElement("div")
+    div.setAttribute("id", "gatsby-gutenberg-block-preview")
+
+    style.innerHTML = `
+        .gatsby-theme-wordpress-gutenberg--hidden {
+            display: none;
+        }
+        `
+    document.head.appendChild(style)
+
+    const elements = []
+
+    document.body.childNodes.forEach(node => {
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        node.classList.add("gatsby-theme-wordpress-gutenberg--hidden")
+        elements.push(node)
+      }
+    })
+
+    document.body.appendChild(div)
+
+    setPreviewUUID(params.get("previewUUID"))
+    setEl(div)
+
+    return () => {
+      if (div.parentNode) {
+        div.parentNode.removeChild(div)
+      }
+
+      if (style.parentNode) {
+        style.parentNode.removeChild(style)
+      }
+
+      elements.forEach(element => {
+        element.classList.remove("gatsby-theme-wordpress-gutenberg--hidden")
+      })
     }
+  }, [])
+
+  if (!el || !previewUUID) {
+    return null
   }
 
-  return {
-    clientId,
-    changedTime,
-    isBlockPreview: !!clientId,
-  }
+  return createPortal(Blocks ? <Blocks previewUUID={previewUUID} /> : null, el)
 }
-const BlockPreview = ({ changedTime, modifiedTime, clientId, blocks, Blocks }) => {
-  const isUpToDate = useIsUpToDate({ changedTime, modifiedTime })
-
-  const block = useMemo(() => findBlock({ blocks, clientId }), [blocks, clientId])
-  if (!isUpToDate || !block) {
-    return <Progress />
-  }
-
-  return <Blocks blocks={[block]} />
-}
-
-export default BlockPreview

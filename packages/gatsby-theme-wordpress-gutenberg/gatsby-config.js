@@ -1,10 +1,5 @@
-module.exports = options => {
+module.exports = () => {
   return {
-    plugins: [
-      {
-        resolve: `gatsby-source-wordpress-gutenberg`,
-        options,
-      },
-    ],
+    plugins: [`gatsby-plugin-graphql-component`]
   }
 }
