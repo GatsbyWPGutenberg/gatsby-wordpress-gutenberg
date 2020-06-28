@@ -38,7 +38,7 @@
   "dependencies": {
     "fs-extra": "^9.0.1",
     "gatsby-page-utils": "^0.2.10",
-    "gatsby-plugin-graphql-component": "^0.2.0",
+    "gatsby-plugin-graphql-component": "^0.2.2",
     "graphql-tag-pluck": "^0.8.7",
     "humps": "^2.0.1",
     "jsonfile": "^6.0.1"
