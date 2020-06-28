@@ -87,6 +87,7 @@ const Preview = ( { src, style } ) => {
 	const [ pageReady, setPageReady ] = useState( false );
 	const fetchPromiseRef = useRef( null );
 	const timeoutRef = useRef( null );
+	const mountedRef = useRef( true );
 
 	const cleanup = useCallback( () => {
 		if ( timeoutRef.current ) {
@@ -115,19 +116,26 @@ const Preview = ( { src, style } ) => {
 			} )
 			.catch( () => {
 				if ( fetchPromiseRef.current === promise ) {
-					timeoutRef.current = setTimeout( check, 1500 );
+					timeoutRef.current = setTimeout( () => {
+						if ( mountedRef.current ) {
+							check();
+						}
+					}, 1500 );
 				}
 			} );
 
 		fetchPromiseRef.current = promise;
 
 		return promise;
-	}, [ src ] );
+	}, [ src, mountedRef ] );
 
 	useEffect( () => {
 		check();
 
-		return cleanup;
+		return () => {
+			mountedRef.current = false;
+			cleanup();
+		};
 	}, [] );
 
 	if ( pageReady ) {
