@@ -1,4 +1,4 @@
-require(`dotenv`).config({
+require("dotenv").config({
   path: `.env.${process.env.NODE_ENV}`,
 })
 
@@ -9,59 +9,48 @@ module.exports = {
     author: `@gatsbyjs`,
   },
   plugins: [
+    `gatsby-plugin-react-helmet`,
+    {
+      resolve: `gatsby-source-filesystem`,
+      options: {
+        name: `images`,
+        path: `${__dirname}/src/images`,
+      },
+    },
     `gatsby-transformer-sharp`,
     `gatsby-plugin-sharp`,
     {
-      resolve: `gatsby-theme-wordpress-gutenberg`,
+      resolve: `gatsby-plugin-manifest`,
       options: {
-        uri: `http://localhost:8020`,
-        user: `admin`,
-        password: `admin`,
-        linkOptions: {
-          uri: `http://admin:admin@localhost:8020/graphql`,
-        },
-        previewToken: `P-123`,
+        name: `gatsby-starter-default`,
+        short_name: `starter`,
+        start_url: `/`,
+        background_color: `#663399`,
+        theme_color: `#663399`,
+        display: `minimal-ui`,
+        icon: `src/images/gatsby-icon.png`, // This path is relative to the root of the site.
       },
     },
     {
       resolve: `gatsby-source-wordpress-experimental`,
       options: {
-        url: `http://admin:admin@localhost:8020/graphql`,
-        verbose: false,
-        // for wp-graphql-gutenberg, attributes currently breaks due
-        // to the origin schema. It works if we exclude attributes
-        excludeFields: [`attributes`],
-        schema: {
-          queryDepth: 15,
-          typePrefix: `Wp`,
-        },
-        develop: {
-          nodeUpdateInterval: 5000,
-        },
-        debug: {
-          graphql: {
-            showQueryOnError: false,
-            showQueryVarsOnError: false,
-            copyQueryOnError: false,
-            panicOnError: false,
-          },
-        },
-        // type:
-        //   // Lets just pull 50 posts in development to make it easy on ourselves.
-        //   // and we don't actually need more than 5000 in production!
-        //   process.env.NODE_ENV === `development`
-        //     ? {
-        //         Post: {
-        //           limit: 50,
-        //         },
-        //       }
-        //     : {
-        //         Post: {
-        //           limit: 5000,
-        //         },
-        //       },
+        url: "http://localhost:8020/graphql",
+        // verbose: true,
+        // develop: {
+        //   nodeUpdateInterval: 5000,
+        // },
+        // debug: {
+        //   graphql: {
+        //     showQueryOnError: true,
+        //     showQueryVarsOnError: false,
+        //     copyQueryOnError: false,
+        //     panicOnError: false,
+        //     onlyReportCriticalErrors: false,
+        //   },
+        // },
       },
     },
+    `gatsby-theme-wordpress-gutenberg`,
     // this (optional) plugin enables Progressive Web App + Offline functionality
     // To learn more, visit: https://gatsby.dev/offline
     // `gatsby-plugin-offline`,

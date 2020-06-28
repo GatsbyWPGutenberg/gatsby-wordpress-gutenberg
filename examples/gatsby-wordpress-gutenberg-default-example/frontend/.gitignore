@@ -67,7 +67,3 @@ yarn-error.log
 .pnp.js
 # Yarn Integrity file
 .yarn-integrity
-
-src/gatsby-theme-wordpress-gutenberg/pages/
-src/gatsby-theme-wordpress-gutenberg/blocks/
-src/gatsby-theme-wordpress-gutenberg/preview-blocks/
