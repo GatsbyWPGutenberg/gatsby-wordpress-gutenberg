@@ -31,13 +31,17 @@ const PAGES_PATH = path.join(`.cache`, `fragments`, PLUGIN_NAME, `pages`)
 const typenameToFieldName = ({ typename }) => typename.charAt(0).toLowerCase() + typename.slice(1)
 
 // creates fragment sdl for all blocks/innerBlocks
-const createFragment = ({ name, blockFragmentNames, innerBlocksLevel }) => {
-  const spreads = blockFragmentNames.map(blockFragmentName => `...${blockFragmentName}`).join(` `)
+const createFragment = ({ name, blockFragmentNames, innerBlocksLevel, asPreview }) => {
+  const spreads = blockFragmentNames.map(blockFragmentName => `...${blockFragmentName}`)
+
+  if (asPreview) {
+    spreads.push(`previewUUID`)
+  }
 
   // since we cannot create recursive fragment definition,
   // we have to statically analyse nesting count and generate proper fields selections
   const generate = (level = 0) => {
-    let fragment = level === 0 ? `{ __typename ${spreads} ` : ` innerBlocks { __typename ${spreads}`
+    let fragment = level === 0 ? `{ __typename ${spreads.join(` `)} ` : ` innerBlocks { __typename ${spreads.join(` `)}`
 
     if (level < innerBlocksLevel) {
       fragment += generate(level + 1)
@@ -258,8 +262,10 @@ const getBlockAtrributes = ({ block }) => {
   return null
 }
 
-const createBlocksComponent = async ({ node, matchBlock, asPreview, ...options }) => {
+const createBlocksComponent = async ({ node, matchBlock, ...options }) => {
   const { store, getNodesByType } = options
+
+  const asPreview = node.internal.type === `WpBlockEditorPreview`
 
   const componentByBlockName = new Map()
 
@@ -291,22 +297,63 @@ const createBlocksComponent = async ({ node, matchBlock, asPreview, ...options }
 
   const source = `/* eslint-disable */
 /* Warning: this file is autogerated, any changes would be lost */
-import React from 'react'
+import React, { useMemo } from 'react'
 import { graphql, useStaticQuery } from 'gatsby'
 
 ${components.map(({ componentPath, typename }) => `import ${typename} from '${componentPath}'`).join(`\n`)}
 
-const Blocks = ({ blocks, previewUUID }) => {
+${
+  asPreview
+    ? `
+const visitor = ({blocks, visit}) => {
+
+  for (let block of blocks) {
+    const result = visit({block})
+
+    if (result || visitor({blocks: block.innerBlocks || [], visit})) {
+      return true
+    }
+  }
+
+  return false;
+}
+`
+    : ``
+}
+
+const Blocks = ({ blocks = [], previewUUID }) => {
   return (
     <>
-      {blocks && blocks.map((block, i) => {
+      {useMemo(() => {
+        ${
+          asPreview
+            ? `
+        if (!previewUUID) {
+          return blocks
+        }
+
+        const result = []
+
+        visitor({blocks, visit: ({block}) => {
+          if (block.previewUUID === previewUUID) {
+            result.push(block)
+            return true
+          }
+
+          return false
+        }})
+
+        return result`
+            : `
+        return blocks`
+        }
+      }, [blocks, previewUUID]).map((block, i) => {
         const children = block.innerBlocks ? <Blocks blocks={block.innerBlocks} previewUUID={previewUUID} /> : null;
 
         ${components
           .map(
             ({ typename }) => `if (block.__typename === '${typename}') {
-            const component = <${typename} {...block} children={children} key={i} />
-            return ${asPreview ? `previewUUID === block.previewUUID ? component : null` : `component`}
+            return <${typename} {...block} children={children} key={i} />
           }`
           )
           .join(`\n        `)}
@@ -326,12 +373,12 @@ export default ({ previewUUID }) => {
         new Set(components.map(({ fragment }) => fragment && fragment.name.value).filter(Boolean))
       ),
       innerBlocksLevel,
+      asPreview,
     })}
     query {
       ${fieldName}(id: {eq: "${node.id}"}) {
         blocks {
           ...${fragmentName}
-          ${asPreview ? `previewUUID` : ``}
         }
       }
     }\`)
@@ -369,10 +416,7 @@ exports.onCreateNode = async (options, pluginOptions) => {
         node,
         name: `blocksComponent`,
         value: await registerComponent({
-          component: await createBlocksComponent(
-            { ...options, asPreview: node.internal.type === `WpBlockEditorPreview`, matchBlock },
-            pluginOptions
-          ),
+          component: await createBlocksComponent({ ...options, matchBlock }, pluginOptions),
         }),
       })
     }
