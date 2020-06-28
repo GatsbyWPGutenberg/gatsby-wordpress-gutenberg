@@ -21,7 +21,7 @@ services:
       WORDPRESS_DB_PASSWORD: examplepass
       WORDPRESS_DB_NAME: exampledb
       WORDPRESS_CONFIG_EXTRA: |
-        define('WP_GATSBY_GUTENBERG_PREVIEW_URL', 'http://localhost:8000');
+        define( 'GRAPHQL_DEBUG', true );
 
     volumes:
       - ./wordpress:/var/www/html
