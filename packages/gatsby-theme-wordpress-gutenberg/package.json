@@ -12,7 +12,8 @@
     "gatsby-theme",
     "wordpress",
     "gutenberg",
-    "block-editor"
+    "block-editor",
+    "page-builder"
   ],
   "repository": {
     "type": "git",
