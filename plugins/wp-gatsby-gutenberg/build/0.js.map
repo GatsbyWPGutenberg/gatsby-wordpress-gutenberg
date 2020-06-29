@@ -1,0 +1,1 @@
+{"version":3,"sources":["webpack:///./src/Admin/settings.js"],"names":[],"mappings":";;;;;;;;;;AAAA;AAAe,2EAAM;AACpB,SAAO,UAAP;AACA,CAFD,E","file":"0.js","sourcesContent":["export default () => {\n\treturn 'Settings';\n};\n"],"sourceRoot":""}

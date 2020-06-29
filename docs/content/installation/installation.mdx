@@ -3,16 +3,42 @@ title: Installation
 description: How to install
 ---
 
-To get the core functionality you need to install plugins into wordpress and npm packages into gatsby.
+To get the core functionality you need to install plugins into Wordpress and npm packages into gatsby.
 
 ## Dependencies
 
-> The source plugin is based on the new `gatsby-source-wordpress` (v4 - experimental) which uses `wp-graphql` under the hood. However the code was written to be able to support also an older version (v3), which uses WP REST API, if there is a high demand for it.
+> The source plugin is based on the new `gatsby-source-wordpress-experimental` which uses `wp-graphql` under the hood.
 
 ### gatsby-source-wordpress-experimental
 
-Follow the instructions on the [plugin's repo](https://github.com/TylerBarnes/using-gatsby-source-wordpress-experimental).
-
-## Wordpress
+Follow the instructions on the [plugin's repo](https://github.com/gatsbyjs/gatsby-source-wordpress-experimental).
 
 ## Gatsby
+
+- Install the theme with npm / yarn
+
+```sh
+npm i gatsby-theme-wordpress-gutenberg
+# or
+yarn add gatsby-theme-wordpress-gutenberg
+```
+
+- Setup theme in your `gatsby-config.js`:
+
+```js
+module.exports = {
+  // ...
+  plugins: [
+    // ... other plugins
+    {
+      resolve: `gatsby-source-wordpress-experimental`,
+      options: {
+        // configure according to plugin's instructions
+      },
+    },
+    `gatsby-theme-wordpress-gutenberg`,
+  ],
+}
+```
+
+- To setup previews, read the [previews](/features/previews/) section.

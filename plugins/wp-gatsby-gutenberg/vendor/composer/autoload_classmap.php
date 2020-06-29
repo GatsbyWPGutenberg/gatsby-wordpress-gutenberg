@@ -6,7 +6,7 @@ $vendorDir = dirname(dirname(__FILE__));
 $baseDir = dirname($vendorDir);
 
 return array(
-    'WpGatsbyGutenberg\\Graphql\\TypeRegistrator' => $baseDir . '/lib/Graphql/TypeRegistrator.php',
-    'WpGatsbyGutenberg\\Model\\GutenbergPreview' => $baseDir . '/lib/Model/GutenbergPreview.php',
-    'WpGatsbyGutenberg\\WpGatsbyGutenberg' => $baseDir . '/lib/init.php',
+    'WPGatsbyGutenberg\\Admin\\Editor' => $baseDir . '/src/Admin/Editor.php',
+    'WPGatsbyGutenberg\\Admin\\Settings' => $baseDir . '/src/Admin/Settings.php',
+    'WPGatsbyGutenberg\\Preview\\Preview' => $baseDir . '/src/Preview/Preview.php',
 );

@@ -16,14 +16,14 @@ module.exports = {
         siteName: `GatsbyWPGutenberg Docs`,
         menuTitle: `GatsbyWPGutenberg Menu`,
         subtitle: `GatsbyWPGutenberg`,
-        baseUrl: `https://gwpg-docs.netlify.com`,
+        baseUrl: `https://gatsbywpgutenberg.netlify.app`,
         root: __dirname,
         description: `GatsbyWPGutenberg documentation`,
         githubRepo: `GatsbyWPGutenberg/gatsby-wordpress-gutenberg/docs`,
-        logoLink: `https://gwpg-docs.netlify.com`,
+        logoLink: `https://gatsbywpgutenberg.netlify.app`,
         navConfig: {
           Docs: {
-            url: `https://gwpg.netlify.com`,
+            url: `https://gatsbywpgutenberg.netlify.app`,
             description: `The GatsbyWPGutenberg docs`,
           },
           Github: {
@@ -40,13 +40,26 @@ module.exports = {
         // },
         sidebarCategories: {
           null: [`index`],
-          "Get started": [`installation/packages`, `installation/installation`],
+          "Get started": [`installation/packages`, `installation/installation`, `installation/quickstart`],
           Overview: [`overview/sourcing`, `overview/theme`],
           Features: [`features/blocks`, `features/page-templates`, `features/previews`],
           "Example Project": [`example/example`],
           Contributing: [`contributing/contributing`],
           "API Reference": [`api/api`],
         },
+      },
+    },
+    {
+      resolve: `gatsby-transformer-remark`,
+      options: {
+        plugins: [
+          {
+            resolve: `gatsby-remark-images`,
+            options: {
+              maxWidth: 800,
+            },
+          },
+        ],
       },
     },
     `gatsby-plugin-preval`,

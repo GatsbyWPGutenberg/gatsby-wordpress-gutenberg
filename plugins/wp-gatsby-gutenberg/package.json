@@ -1,0 +1,20 @@
+{
+	"name": "wp-gatsby-gutenberg",
+	"main": "build/index.js",
+	"license": "GPLv3",
+	"private": true,
+	"devDependencies": {
+		"@wordpress/scripts": "^7.1.2"
+	},
+	"scripts": {
+		"start": "wp-scripts start",
+		"build": "wp-scripts build"
+	},
+	"dependencies": {
+		"@wordpress/eslint-plugin": "^4.0.0",
+		"eslint-plugin-eslint-comments": "^3.1.2",
+		"eslint-plugin-prettier": "^3.1.2",
+		"styled-components": "^5.0.1",
+		"uuid": "^8.1.0"
+	}
+}
