@@ -5,6 +5,6 @@
     "examples/gatsby-wordpress-gutenberg-default-example/frontend",
     "packages/*"
   ],
-  "version": "0.0.0",
+  "version": "0.1.0",
   "useWorkspaces": true
 }

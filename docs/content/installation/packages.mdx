@@ -5,22 +5,20 @@ description: Various packages/plugins which define the framework
 
 The framework is defined by various packages which need to be installed inside wordpress and gatsby.
 
+## Dependencies
+
+- [`gatsby-source-wordpress-experimental` / `wp-gatsby`](https://github.com/gatsbyjs/gatsby-source-wordpress-experimental): Gatsby package / WP plugin to source Wordpress content into gatsby's GraphQL schema.
+
+- [`wp-graphql-gutenberg`](https://github.com/pristas-peter/wp-graphql-gutenberg): WP plugin to expose gutenberg blocks through GraphQL schema.
+
 ## Core
 
-- `gatsby-source-wordpress-gutenberg` / `wp-gatsby-gutenberg`: Gatsby package / WP plugin to source gutenberg blocks into gatsby's GraphQL schema.
-
-> Read more about how sourcing works [here](/overview/sourcing/).
-
-- `gatsby-theme-wordpress-gutenberg`: Gatsby package responsible for mapping blocks into react components, autogenerating content components, pages and previews.
+- `gatsby-theme-wordpress-gutenberg`: Gatsby package responsible for mapping blocks into react components with ability to query them automatically as one component
 
 > Read more about how theme works [here](/overview/theme/).
 
 ## Addons
 
-- `gatsby-source-wordpress-gutenberg-acf` / `wp-gatsby-gutenberg-acf` (comming soon): Gatsby package / WP plugin to support ACF blocks (Pro).
+- `wp-gatsby-gutenberg`: WP plugin to enable live gatsby block previews in gutenberg
 
-- `gatsby-source-wordpress-gutenberg-crb` / `wp-gatsby-gutenberg-crb` (comming soon): Gatsby package / WP plugin to support Carbon blocks (open-source).
-
-- `gatsby-source-wordpress-gutenberg-schema-addons` (comming soon): Gatsby package to bridge sourced wordpress content with sourced blocks.
-
-- `gatsby-theme-wordpress-gutenberg-core-blocks` (comming soon): Gatsby package providing implementation for some of the core wordpress blocks using features like gatsby-image, native links and so...
+- [`wp-graphql-gutenberg-acf`](https://github.com/pristas-peter/wp-graphql-gutenberg-acf) WP plugin to support ACF blocks (Pro).

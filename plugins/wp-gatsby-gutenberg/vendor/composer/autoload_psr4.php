@@ -6,5 +6,5 @@ $vendorDir = dirname(dirname(__FILE__));
 $baseDir = dirname($vendorDir);
 
 return array(
-    'GatsbyWordpressGutenberg\\' => array($baseDir . '/lib'),
+    'GatsbyWordpressGutenberg\\' => array($baseDir . '/src'),
 );
