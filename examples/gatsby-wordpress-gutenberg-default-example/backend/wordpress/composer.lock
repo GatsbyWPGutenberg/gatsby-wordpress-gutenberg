@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "312f3351803fa939bd1807d2f8a18ced",
+    "content-hash": "da44daa6fd21c1ed0a12cf2abd8c806c",
     "packages": [
         {
             "name": "composer/installers",
@@ -567,16 +567,16 @@
         },
         {
             "name": "pristas-peter/wp-graphql-gutenberg",
-            "version": "v0.3.1",
+            "version": "v0.3.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/pristas-peter/wp-graphql-gutenberg.git",
-                "reference": "8e4a4ae2a011d62985d4cb46e81086fdf0109e99"
+                "reference": "52006311ae3ab9cf0878477f4b2a60a1fd39f87c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pristas-peter/wp-graphql-gutenberg/zipball/8e4a4ae2a011d62985d4cb46e81086fdf0109e99",
-                "reference": "8e4a4ae2a011d62985d4cb46e81086fdf0109e99",
+                "url": "https://api.github.com/repos/pristas-peter/wp-graphql-gutenberg/zipball/52006311ae3ab9cf0878477f4b2a60a1fd39f87c",
+                "reference": "52006311ae3ab9cf0878477f4b2a60a1fd39f87c",
                 "shasum": ""
             },
             "require": {
@@ -600,7 +600,7 @@
             },
             "notification-url": "https://packagist.org/downloads/",
             "description": "Query gutenberg blocks with wp-graphql",
-            "time": "2020-06-02T16:47:10+00:00"
+            "time": "2020-06-25T18:31:45+00:00"
         },
         {
             "name": "pristas-peter/wp-graphql-gutenberg-acf",
@@ -627,7 +627,7 @@
         },
         {
             "name": "symfony/css-selector",
-            "version": "v5.1.0",
+            "version": "v5.1.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/css-selector.git",
@@ -853,16 +853,16 @@
         },
         {
             "name": "wp-graphql/wp-graphql-acf",
-            "version": "v0.3.3",
+            "version": "v0.3.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/wp-graphql/wp-graphql-acf.git",
-                "reference": "ea3b2397c68eb58e7a026747eb9f4e9829b53f60"
+                "reference": "9bb3d7a7fdef013102c933e11cd17ed0010a0b40"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/wp-graphql/wp-graphql-acf/zipball/ea3b2397c68eb58e7a026747eb9f4e9829b53f60",
-                "reference": "ea3b2397c68eb58e7a026747eb9f4e9829b53f60",
+                "url": "https://api.github.com/repos/wp-graphql/wp-graphql-acf/zipball/9bb3d7a7fdef013102c933e11cd17ed0010a0b40",
+                "reference": "9bb3d7a7fdef013102c933e11cd17ed0010a0b40",
                 "shasum": ""
             },
             "require-dev": {
@@ -891,7 +891,7 @@
                 }
             ],
             "description": "Advanced Custom Fields bindings for wp-graphql",
-            "time": "2020-04-27T14:27:41+00:00"
+            "time": "2020-06-18T13:01:17+00:00"
         }
     ],
     "packages-dev": [],
