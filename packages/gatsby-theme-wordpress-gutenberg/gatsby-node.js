@@ -184,11 +184,13 @@ const visitBlocks = async ({ blocks, visitor }) => {
     innerBlocksLevel = Math.max(currentInnerBlocksLevel, innerBlocksLevel)
     const visitedBlock = await visitor({ block: innerBlock })
 
-    await Promise.all(
-      visitedBlock.innerBlocks.map(async innerBlock => {
-        await visitInnerBlock({ innerBlock, currentInnerBlocksLevel: currentInnerBlocksLevel + 1 })
-      })
-    )
+    if (visitedBlock.innerBlocks) {
+      await Promise.all(
+        visitedBlock.innerBlocks.map(async innerBlock => {
+          await visitInnerBlock({ innerBlock, currentInnerBlocksLevel: currentInnerBlocksLevel + 1 })
+        })
+      )
+    }
   }
 
   await Promise.all(
